@@ -1,6 +1,6 @@
-# 🛡️ Academia eJPTv2 → OSCP
+# 🛡️ Academia eJPTv2
 
-Curso web completo, visual y en español para aprender pentesting desde cero hasta nivel eJPTv2, con la vista puesta en el OSCP.
+Curso web completo, visual y en español centrado en aprobar el certificado **eJPTv2**, desde cero. Cada tema incluye un **vídeo explicativo** embebido y una tarjeta de vídeos bajo cada sección. Incluye una ampliación opcional hacia el OSCP.
 
 ## Contenido
 - **Nivel 0 · Bases:** informática, redes, Linux y Windows desde cero.
