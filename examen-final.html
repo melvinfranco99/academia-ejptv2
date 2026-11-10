@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="es" data-root="">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Simulacro final · Academia eJPTv2</title>
+<meta name="description" content="Examen simulacro tipo eJPTv2 con un escenario realista y preguntas autocorregidas con explicación.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar"></aside>
+<main>
+<h1>🎯 Simulacro final tipo eJPTv2</h1>
+<p class="lead">30 preguntas que recorren todo el temario. En el examen real respondes sobre un laboratorio en vivo; aquí combinamos teoría y un escenario. Objetivo: ≥ 70 %.</p>
+
+<div class="box example"><strong>📋 Escenario</strong>
+Te contratan para auditar la red <code>10.10.50.0/24</code>. Tras escanear encuentras:
+<div class="table-wrap"><table>
+<tr><th>Host</th><th>Puertos abiertos</th><th>Notas</th></tr>
+<tr><td>10.10.50.10</td><td>21 (vsftpd 2.3.4), 22, 80 (Apache 2.4.49)</td><td>Servidor web Linux</td></tr>
+<tr><td>10.10.50.20</td><td>135, 139, 445, 3389</td><td>Windows; SMB responde a null session</td></tr>
+<tr><td>10.10.50.30</td><td>88, 389, 445, 5985</td><td>Controlador de Dominio CORP.LOCAL</td></tr>
+</table></div>
+El host 10.10.50.20 tiene una segunda interfaz en <code>172.16.8.0/24</code>.</div>
+
+<div id="examholder"></div>
+<script type="application/json" data-quiz="Examen · 30 preguntas">
+[
+{"q":"Para descubrir TODOS los puertos de 10.10.50.10, el comando correcto es…","o":["nmap 10.10.50.10","nmap -p- 10.10.50.10","nmap -F 10.10.50.10","nmap -sn 10.10.50.10"],"a":1,"e":"-p- escanea los 65535 puertos; por defecto solo mira 1000."},
+{"q":"vsftpd 2.3.4 es conocido por…","o":["Ser la última versión segura","Tener un backdoor explotable","No existir","Ser de Windows"],"a":1,"e":"vsftpd 2.3.4 tiene un backdoor; hay módulo en Metasploit."},
+{"q":"¿Cómo buscas un exploit para Apache 2.4.49?","o":["nmap apache","searchsploit apache 2.4.49","hydra apache","john apache"],"a":1,"e":"searchsploit (Apache 2.4.49 tiene un path traversal / RCE conocido)."},
+{"q":"Apache 2.4.49 es vulnerable a…","o":["SQL injection","Path traversal (CVE-2021-41773)","XSS","Buffer en SSH"],"a":1,"e":"CVE-2021-41773, path traversal que puede derivar en RCE."},
+{"q":"'SMB responde a null session' significa que puedes…","o":["Nada","Enumerar sin usuario ni contraseña","Apagar el equipo","Cifrarlo"],"a":1,"e":"Acceso anónimo: enum4linux -a, smbclient -N."},
+{"q":"¿Qué herramienta enumera usuarios y shares de 10.10.50.20?","o":["nikto","enum4linux -a 10.10.50.20","sqlmap","wpscan"],"a":1,"e":"enum4linux es el todo-en-uno de SMB."},
+{"q":"El host 10.10.50.30 con puertos 88, 389, 445, 5985 es casi seguro…","o":["Un router","Un Controlador de Dominio","Una impresora","Una web"],"a":1,"e":"88 Kerberos + 389 LDAP + 445 SMB = DC de Active Directory."},
+{"q":"El puerto 5985 en el DC te permite, con credenciales, usar…","o":["RDP","evil-winrm (PowerShell remoto)","FTP","SNMP"],"a":1,"e":"5985 = WinRM; evil-winrm da shell remota."},
+{"q":"Para atacar la red 172.16.8.0/24 necesitas…","o":["Otro Kali","Hacer pivoting a través de 10.10.50.20","Reiniciar","Nada, ya la ves"],"a":1,"e":"172.16.8.0/24 solo es accesible por la 2ª interfaz del host comprometido."},
+{"q":"¿Qué herramienta moderna crea una interfaz tun para pivotar cómodamente?","o":["hydra","ligolo-ng","nikto","john"],"a":1,"e":"ligolo-ng; añades una ruta y usas las herramientas normalmente."},
+{"q":"Consigues una webshell en 10.10.50.10. Para una shell estable, montas…","o":["Un bind shell que el firewall bloquea","Una reverse shell con nc -lvnp en tu Kali","Un escaneo","Un hash"],"a":1,"e":"Reverse shell: tú escuchas, la víctima conecta hacia ti."},
+{"q":"Tras la reverse shell, el PRIMER comando de privesc es…","o":["uname -a","sudo -l","find /","ls"],"a":1,"e":"sudo -l revela permisos mal configurados de inmediato."},
+{"q":"sudo -l muestra: (ALL) NOPASSWD: /usr/bin/find. ¿Qué consultas?","o":["exploit-db","GTFOBins","crackstation","shodan"],"a":1,"e":"GTFOBins indica cómo abusar de find con sudo para ser root."},
+{"q":"El comando para escalar con find+sudo es…","o":["sudo find . -exec /bin/sh \\; -quit","find root","sudo rm -rf","find / -root"],"a":0,"e":"Lanza una shell como root mediante -exec."},
+{"q":"En el Windows capturas un hash NTLM. Sin crackearlo, puedes…","o":["Nada","Pass-the-hash para autenticarte","Solo verlo","Borrarlo"],"a":1,"e":"PtH: te autenticas con el hash (crackmapexec -H, evil-winrm -H)."},
+{"q":"Para crackear un hash NTLM con Hashcat, el modo es…","o":["-m 0","-m 1000","-m 1800","-m 22000"],"a":1,"e":"1000 = NTLM. 0 = MD5."},
+{"q":"Para obtener hashes crackeables de usuarios AD sin pre-auth usas…","o":["Kerberoasting","AS-REP Roasting","DCSync","XSS"],"a":1,"e":"AS-REP Roasting (GetNPUsers, hashcat -m 18200)."},
+{"q":"Kerberoasting ataca cuentas que tienen…","o":["un SPN (cuentas de servicio)","MFA","sesión nula","puerto 80"],"a":0,"e":"Cuentas con SPN; pides su TGS y lo crackeas (-m 13100)."},
+{"q":"Siendo Domain Admin, vuelcas todos los hashes del dominio con…","o":["nmap","impacket-secretsdump","nikto","gobuster"],"a":1,"e":"secretsdump (incluye DCSync)."},
+{"q":"El TTL de un ping a 10.10.50.20 es 128. El SO es…","o":["Linux","Windows","Cisco","Desconocido"],"a":1,"e":"128 ≈ Windows; 64 ≈ Linux."},
+{"q":"10.10.50.20 ignora el ping. Para escanearlo añades…","o":["-sU","-Pn","-F","-O"],"a":1,"e":"-Pn para que Nmap no lo descarte por no responder al ping."},
+{"q":"Encuentras un formulario de login en 10.10.50.10/admin. Para probar SQLi inicial escribes…","o":["<script>","' OR '1'='1' --","../../etc/passwd","; id"],"a":1,"e":"Bypass de autenticación por SQLi."},
+{"q":"Para leer /etc/passwd por una LFI usarías…","o":["?page=../../../../etc/passwd","?id=1","' OR 1=1","nc passwd"],"a":0,"e":"LFI con recorrido de directorios."},
+{"q":"Para fuerza bruta del SSH del usuario 'admin' con rockyou…","o":["hydra -l admin -P rockyou.txt ssh://IP","john ssh","nmap --brute","hashcat ssh"],"a":0,"e":"Hydra hace fuerza bruta online de SSH."},
+{"q":"¿Qué flag de Nmap guarda la salida en los 3 formatos?","o":["-oN","-oA","-oG","-v"],"a":1,"e":"-oA base (normal, grepable y XML)."},
+{"q":"Para transferir linpeas desde Kali a la víctima Linux montas…","o":["python3 -m http.server 80 y wget en la víctima","un RDP","un hash","nada"],"a":0,"e":"Servidor HTTP en Kali + wget/curl en la víctima."},
+{"q":"Un puerto en estado 'filtered' indica…","o":["Servicio activo","Puerto cerrado","Un firewall filtra, sin respuesta","Es UDP siempre"],"a":2,"e":"filtered = probablemente un firewall bloquea."},
+{"q":"La comunidad SNMP por defecto que pruebas en escaneos UDP es…","o":["admin","public","root","snmp"],"a":1,"e":"'public' (solo lectura) y 'private'."},
+{"q":"Para el reporte, cada captura de flag debe mostrar…","o":["Tu cara","La IP de la víctima junto al proof.txt","Solo la flag","El logo"],"a":1,"e":"IP + proof.txt + comando, para demostrar el compromiso."},
+{"q":"En el OSCP, Metasploit se puede usar…","o":["En todas","Solo en una máquina","Nunca","Solo en AD"],"a":1,"e":"Uso completo solo en una máquina del examen."},
+{"q":"Orden correcto de la metodología:","o":["Explotar→Escanear→Reportar","Recon→Escaneo/Enum→Explotación→Post→Reporte","Reporte→Recon","Escanear→Reportar→Explotar"],"a":1,"e":"Siempre en ese orden; la enumeración es la fase clave."}
+]
+</script>
+
+<div class="box tip" style="margin-top:30px"><strong>¿Sacaste ≥ 70 %?</strong>¡Enhorabuena, vas por buen camino! Si no, identifica los módulos de las preguntas que fallaste y repásalos. Luego sigue con los <a href="laboratorios.html">laboratorios prácticos</a>: el examen real es práctico.</div>
+</main>
+<nav class="toc"></nav>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

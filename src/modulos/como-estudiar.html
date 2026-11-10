@@ -1,0 +1,94 @@
+Cómo usar esta web y montar tu laboratorio|Guía de estudio, toma de notas y cómo montar un laboratorio de hacking legal y gratuito en casa.
+<span class="badge base">Empieza aquí</span>
+<h1>🧭 Cómo usar esta web y montar tu laboratorio</h1>
+<p class="lead">Antes de aprender a “hackear”, necesitas dos cosas: un método de estudio y un sitio <b>legal</b> donde practicar. Aquí montamos ambos.</p>
+
+<h2>Cómo está organizado cada tema</h2>
+<div class="grid">
+<div class="card"><h3>📘 Definición</h3><p>Recuadro azul: qué es algo, en una o dos frases.</p></div>
+<div class="card"><h3>🧠 Analogía</h3><p>Recuadro morado: lo mismo explicado con algo de la vida real.</p></div>
+<div class="card"><h3>💡 Truco</h3><p>Recuadro verde: consejos prácticos y atajos.</p></div>
+<div class="card"><h3>⚠️ Cuidado</h3><p>Recuadro naranja: errores típicos.</p></div>
+<div class="card"><h3>🔴 Nivel OSCP</h3><p>Recuadro rojo: lo mismo, pero más a fondo. Puedes saltarlo la primera vez.</p></div>
+<div class="card"><h3>📝 Evaluación</h3><p>Al final: cuestionario autocorregido, ejercicios con solución y una práctica de laboratorio.</p></div>
+</div>
+
+<h2>El método: Leer → Hacer → Explicar</h2>
+<ol class="steps">
+<li><b>Lee</b> el tema una vez sin agobiarte. Mira los diagramas.</li>
+<li><b>Haz</b> los comandos en tu laboratorio. Copiar y pegar sin entender no sirve: cambia valores y mira qué pasa.</li>
+<li><b>Explica</b> con tus palabras en tus notas (como si se lo contaras a un amigo). Si no puedes explicarlo, vuelve al paso 1.</li>
+<li><b>Evalúate</b> con el cuestionario. Objetivo: ≥ 70 %. Repite a los 3 días (repaso espaciado).</li>
+</ol>
+<div class="box analogy"><strong>🧠 Analogía</strong>Aprender pentesting es como aprender a cocinar: leer recetas ayuda, pero solo aprendes cuando quemas unas cuantas tortillas. El laboratorio es tu cocina.</div>
+
+<h2>⚖️ Legalidad: lo primero</h2>
+<div class="box danger"><strong>🚫 Nunca ataques algo que no es tuyo o sin permiso escrito</strong>Escanear o atacar sistemas ajenos sin autorización es delito en casi todos los países (en España, por ejemplo, el Código Penal castiga el acceso ilícito a sistemas). Practica <b>solo</b> en: tus propias máquinas virtuales, plataformas de entrenamiento (TryHackMe, HackTheBox, PortSwigger, VulnHub) y el laboratorio del examen.</div>
+
+<h2>Montar tu laboratorio en casa</h2>
+<figure>
+<svg viewBox="0 0 820 300" role="img" aria-label="Laboratorio: tu PC con VirtualBox, Kali y máquinas víctimas en red NAT">
+<rect x="10" y="10" width="800" height="280" rx="16" class="bx"/>
+<text x="30" y="40" font-weight="800" font-size="17">Tu ordenador (anfitrión / host)</text>
+<rect x="40" y="60" width="740" height="210" rx="12" fill="none" stroke="#2563eb" stroke-dasharray="6 4"/>
+<text x="60" y="85" font-size="14" fill="#2563eb">VirtualBox / VMware → Red NAT “LabNet” 10.0.2.0/24 (aislada)</text>
+<rect x="70" y="110" width="190" height="130" rx="10" fill="#0f9d6e22" stroke="#0f9d6e"/>
+<text x="165" y="145" text-anchor="middle" font-weight="800">🐉 Kali Linux</text>
+<text x="165" y="170" text-anchor="middle" font-size="13" class="muted">Atacante</text>
+<text x="165" y="195" text-anchor="middle" font-size="13">10.0.2.15</text>
+<rect x="315" y="110" width="190" height="130" rx="10" fill="#dc262622" stroke="#dc2626"/>
+<text x="410" y="145" text-anchor="middle" font-weight="800">💀 Metasploitable 2</text>
+<text x="410" y="170" text-anchor="middle" font-size="13" class="muted">Víctima Linux</text>
+<text x="410" y="195" text-anchor="middle" font-size="13">10.0.2.4</text>
+<rect x="560" y="110" width="190" height="130" rx="10" fill="#dc262622" stroke="#dc2626"/>
+<text x="655" y="145" text-anchor="middle" font-weight="800">🪟 Windows (eval)</text>
+<text x="655" y="170" text-anchor="middle" font-size="13" class="muted">Víctima Windows</text>
+<text x="655" y="195" text-anchor="middle" font-size="13">10.0.2.5</text>
+<line x1="260" y1="175" x2="315" y2="175" stroke="#888" stroke-width="3" class="flow"/>
+<line x1="505" y1="175" x2="560" y2="175" stroke="#888" stroke-width="3" class="flow"/>
+</svg>
+<figcaption>Todo vive dentro de tu PC, en una red virtual aislada. Así no tocas la red de tu casa ni de nadie.</figcaption>
+</figure>
+<ol class="steps">
+<li><b>Instala VirtualBox</b> (gratis) desde virtualbox.org. Necesitas ≥ 8 GB de RAM (ideal 16 GB).</li>
+<li><b>Descarga Kali Linux</b> “Virtual Machines” desde kali.org (imagen ya preparada para VirtualBox). Usuario/contraseña por defecto: <code>kali</code>/<code>kali</code>.</li>
+<li><b>Descarga víctimas</b>: Metasploitable 2 (SourceForge, Rapid7), DVWA (aplicación web vulnerable) y una VM de evaluación de Windows de Microsoft.</li>
+<li><b>Crea una “Red NAT”</b> en VirtualBox: Archivo → Herramientas → Gestor de red → Redes NAT → Crear. Pon todas las VMs en esa red.</li>
+<li><b>Comprueba</b> desde Kali: <code>ip a</code> para ver tu IP y <code>ping -c 2 IP_VICTIMA</code>.</li>
+<li><b>Haz una instantánea (snapshot)</b> de cada VM limpia, para poder volver atrás si rompes algo.</li>
+</ol>
+<div class="box danger"><strong>Metasploitable es MUY vulnerable</strong>Nunca la pongas en modo “Adaptador puente” ni la expongas a Internet.</div>
+
+<h2>Plataformas online (sin instalar casi nada)</h2>
+<div class="table-wrap"><table>
+<tr><th>Plataforma</th><th>Para qué</th><th>Precio</th></tr>
+<tr><td>TryHackMe</td><td>Rutas guiadas paso a paso (“Pre Security”, “Jr Penetration Tester”). Ideal para empezar.</td><td>Gratis / premium</td></tr>
+<tr><td>HackTheBox</td><td>Máquinas reales, más difíciles. “Starting Point” para empezar. Muy usado para OSCP.</td><td>Gratis / VIP</td></tr>
+<tr><td>PortSwigger Web Security Academy</td><td>La mejor formación gratis de hacking web.</td><td>Gratis</td></tr>
+<tr><td>OverTheWire (Bandit)</td><td>Aprender la terminal de Linux jugando.</td><td>Gratis</td></tr>
+<tr><td>VulnHub</td><td>VMs vulnerables para descargar.</td><td>Gratis</td></tr>
+<tr><td>INE (eJPTv2)</td><td>Curso oficial “Penetration Testing Student” + laboratorios.</td><td>Starter gratis / premium</td></tr>
+<tr><td>OffSec Proving Grounds</td><td>Máquinas al estilo del OSCP.</td><td>Play gratis / Practice de pago</td></tr>
+</table></div>
+
+<h2>📓 Toma de notas (esto te salva el examen)</h2>
+<p>Usa <b>Obsidian</b>, <b>CherryTree</b> o <b>Notion</b>. Crea una carpeta por máquina con esta estructura:</p>
+<pre>📁 10.10.10.5/
+ ├─ 01-escaneo.md        <span class="c"># salida de nmap</span>
+ ├─ 02-enumeracion.md    <span class="c"># puertos y lo que encontraste en cada uno</span>
+ ├─ 03-explotacion.md    <span class="c"># comando exacto que te dio acceso</span>
+ ├─ 04-privesc.md        <span class="c"># cómo pasaste a root/SYSTEM</span>
+ ├─ credenciales.md      <span class="c"># usuario:contraseña, hashes</span>
+ └─ capturas/            <span class="c"># screenshots con fecha</span></pre>
+<div class="box tip"><strong>💡 Regla de oro</strong>Si no lo apuntaste, no pasó. En el OSCP necesitas reproducir cada paso en el reporte; en el eJPTv2 necesitas recordar IPs, usuarios y flags para responder las preguntas.</div>
+
+<h2>🎥 Vídeos recomendados</h2>
+<p>Los mejores canales (en español e inglés) para acompañar el curso:</p>
+<div class="vlinks">
+<a href="https://www.youtube.com/@s4vitar" target="_blank" rel="noopener">S4vitar (ES) – máquinas resueltas</a>
+<a href="https://www.youtube.com/@ippsec" target="_blank" rel="noopener">IppSec (EN) – HackTheBox</a>
+<a href="https://www.youtube.com/@NetworkChuck" target="_blank" rel="noopener">NetworkChuck (EN) – fundamentos</a>
+<a href="https://www.youtube.com/@TCMSecurityAcademy" target="_blank" rel="noopener">TCM Security (EN)</a>
+<a href="https://www.youtube.com/@JohnHammond010" target="_blank" rel="noopener">John Hammond (EN)</a>
+<a href="https://www.youtube.com/results?search_query=instalar+kali+linux+virtualbox+espa%C3%B1ol" target="_blank" rel="noopener">Instalar Kali en VirtualBox (ES)</a>
+</div>

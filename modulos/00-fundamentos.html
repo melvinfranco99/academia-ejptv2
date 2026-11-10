@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="es" data-root="../">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>00 · Informática desde cero · Academia eJPTv2</title>
+<meta name="description" content="Hardware, sistema operativo, binario, hexadecimal, archivos, procesos, usuarios y modelo cliente-servidor explicados fácil.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar"></aside>
+<main>
+<span class="badge base">Nivel 0</span><span class="badge">≈ CompTIA A+ / ITF+</span>
+<h1>00 · Informática desde cero</h1>
+<p class="lead">Las piezas básicas que vas a “atacar” más adelante: qué hay dentro de un ordenador, cómo guarda la información y cómo se comunican los programas.</p>
+
+<h2>1. ¿Qué es un ordenador por dentro?</h2>
+<figure>
+<svg viewBox="0 0 820 260" role="img" aria-label="Componentes: CPU, RAM, disco, red">
+<rect x="320" y="90" width="180" height="80" rx="12" fill="#2563eb22" stroke="#2563eb"/>
+<text x="410" y="125" text-anchor="middle" font-weight="800">🧠 CPU</text><text x="410" y="148" text-anchor="middle" font-size="13" class="muted">el cerebro: ejecuta</text>
+<rect x="40" y="20" width="200" height="80" rx="12" fill="#0f9d6e22" stroke="#0f9d6e"/>
+<text x="140" y="55" text-anchor="middle" font-weight="800">⚡ RAM</text><text x="140" y="78" text-anchor="middle" font-size="13" class="muted">memoria rápida, se borra</text>
+<rect x="40" y="160" width="200" height="80" rx="12" fill="#d9770622" stroke="#d97706"/>
+<text x="140" y="195" text-anchor="middle" font-weight="800">💾 Disco</text><text x="140" y="218" text-anchor="middle" font-size="13" class="muted">guarda para siempre</text>
+<rect x="580" y="20" width="200" height="80" rx="12" fill="#a855f722" stroke="#a855f7"/>
+<text x="680" y="55" text-anchor="middle" font-weight="800">🌐 Tarjeta de red</text><text x="680" y="78" text-anchor="middle" font-size="13" class="muted">habla con otros</text>
+<rect x="580" y="160" width="200" height="80" rx="12" fill="#dc262622" stroke="#dc2626"/>
+<text x="680" y="195" text-anchor="middle" font-weight="800">⌨️ Entrada/Salida</text><text x="680" y="218" text-anchor="middle" font-size="13" class="muted">teclado, pantalla</text>
+<g stroke="#888" stroke-width="2.5" class="flow"><line x1="240" y1="60" x2="320" y2="115"/><line x1="240" y1="200" x2="320" y2="150"/><line x1="500" y1="115" x2="580" y2="60"/><line x1="500" y1="150" x2="580" y2="200"/></g>
+</svg>
+<figcaption>La CPU coge datos del disco, los pone en RAM para trabajar rápido y se comunica por la red.</figcaption>
+</figure>
+<div class="box analogy"><strong>🧠 Analogía: una cocina</strong>La <b>CPU</b> es el cocinero. La <b>RAM</b> es la encimera (rápida pero pequeña; al cerrar la cocina se limpia). El <b>disco</b> es la despensa (grande, lenta, todo se queda guardado). La <b>tarjeta de red</b> es el camarero que lleva y trae pedidos.</div>
+<div class="box tip"><strong>💡 ¿Por qué le importa a un pentester?</strong>Las contraseñas a veces están en RAM (Mimikatz las lee de ahí), los ficheros de configuración en disco guardan credenciales, y la red es por donde entramos.</div>
+
+<h2>2. Sistema operativo (SO)</h2>
+<div class="box def"><strong>📘 Definición</strong>El <b>sistema operativo</b> es el programa principal que gestiona el hardware y deja que otros programas lo usen. Ejemplos: Windows, Linux (Ubuntu, Kali, Debian), macOS, Android.</div>
+<figure>
+<svg viewBox="0 0 600 250" role="img" aria-label="Capas: usuario, aplicaciones, kernel, hardware">
+<rect x="100" y="10" width="400" height="45" rx="8" fill="#a855f722" stroke="#a855f7"/><text x="300" y="38" text-anchor="middle">👤 Usuario</text>
+<rect x="100" y="65" width="400" height="45" rx="8" fill="#0f9d6e22" stroke="#0f9d6e"/><text x="300" y="93" text-anchor="middle">📦 Aplicaciones (navegador, servidor web…)</text>
+<rect x="100" y="120" width="400" height="55" rx="8" fill="#2563eb22" stroke="#2563eb"/><text x="300" y="145" text-anchor="middle" font-weight="800">⚙️ Kernel (núcleo del SO)</text><text x="300" y="165" text-anchor="middle" font-size="12" class="muted">tiene control total → “ring 0”</text>
+<rect x="100" y="185" width="400" height="45" rx="8" fill="#d9770622" stroke="#d97706"/><text x="300" y="213" text-anchor="middle">🔩 Hardware</text>
+</svg>
+<figcaption>Cuanto más abajo, más poder. El objetivo final de un ataque suele ser llegar al máximo privilegio.</figcaption>
+</figure>
+<div class="table-wrap"><table>
+<tr><th>Concepto</th><th>Linux</th><th>Windows</th></tr>
+<tr><td>Superusuario (el “jefe”)</td><td><code>root</code></td><td><code>Administrator</code> / <code>NT AUTHORITY\SYSTEM</code></td></tr>
+<tr><td>Separador de rutas</td><td><code>/home/ana/doc.txt</code></td><td><code>C:\Users\Ana\doc.txt</code></td></tr>
+<tr><td>Terminal</td><td>bash, zsh</td><td>CMD, PowerShell</td></tr>
+<tr><td>Dónde están las contraseñas</td><td><code>/etc/shadow</code> (hashes)</td><td>SAM / LSASS / NTDS.dit</td></tr>
+</table></div>
+
+<h2>3. Binario, hexadecimal y bytes</h2>
+<div class="box def"><strong>📘 Definición</strong>El ordenador solo entiende <b>0 y 1</b> (bits). 8 bits = 1 <b>byte</b>. Con un byte puedes contar de 0 a 255.</div>
+<p>Esto es clave para las <b>direcciones IP</b> (cada número de una IP es un byte: por eso nunca pasa de 255).</p>
+<div class="table-wrap"><table>
+<tr><th>Posición del bit</th><td>128</td><td>64</td><td>32</td><td>16</td><td>8</td><td>4</td><td>2</td><td>1</td><th>Total</th></tr>
+<tr><th>192 =</th><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>128+64 = <b>192</b></td></tr>
+<tr><th>10 =</th><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>1</td><td>0</td><td>8+2 = <b>10</b></td></tr>
+<tr><th>255 =</th><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td><b>255</b></td></tr>
+</table></div>
+<div class="box example"><strong>✍️ Ejemplo paso a paso: pasar 172 a binario</strong>
+¿Cabe 128 en 172? Sí → 1 (queda 44). ¿64 en 44? No → 0. ¿32 en 44? Sí → 1 (queda 12). ¿16? No → 0. ¿8? Sí → 1 (queda 4). ¿4? Sí → 1 (queda 0). 2 → 0, 1 → 0.<br>Resultado: <code>10101100</code></div>
+<p><b>Hexadecimal</b> usa 16 símbolos (0-9 y A-F). Un byte = 2 dígitos hex: <code>255 = FF</code>, <code>65 = 0x41</code> (la letra “A”). Lo verás en direcciones MAC (<code>08:00:27:aa:bb:cc</code>), en hashes y en exploits.</p>
+<p><b>Base64</b> no es cifrado: es una forma de escribir datos binarios con letras. <code>echo 'hola' | base64</code> → <code>aG9sYQo=</code>. Cualquiera puede decodificarlo.</p>
+<div class="box warn"><strong>⚠️ Codificar ≠ Cifrar ≠ Hashear</strong>
+<b>Codificar</b> (Base64, URL-encode): reversible por cualquiera, sin clave.<br>
+<b>Cifrar</b> (AES, RSA): reversible solo con la clave.<br>
+<b>Hashear</b> (MD5, SHA256, NTLM): huella de un solo sentido, no se “descifra”; se adivina probando.</div>
+
+<h2>4. Archivos, procesos y servicios</h2>
+<ul>
+<li><b>Archivo</b>: datos guardados en disco con un nombre (ej. <code>config.php</code>).</li>
+<li><b>Proceso</b>: un programa en ejecución. Cada uno tiene un número (<b>PID</b>) y se ejecuta <b>como un usuario</b>. Si un proceso de root es vulnerable, quien lo explote obtiene permisos de root.</li>
+<li><b>Servicio / demonio</b>: proceso que se ejecuta en segundo plano esperando peticiones (servidor web, SSH, base de datos).</li>
+</ul>
+<div class="box analogy"><strong>🧠 Analogía</strong>Un <b>servicio</b> es un dependiente detrás de un mostrador esperando clientes. El <b>puerto</b> es el número de ventanilla. Si el dependiente se deja engañar (vulnerabilidad), puedes hacer que te dé cosas que no debería, con su llave (sus permisos).</div>
+
+<h2>5. Cliente y servidor</h2>
+<figure>
+<svg viewBox="0 0 760 170" role="img" aria-label="Cliente pide, servidor responde">
+<rect x="20" y="40" width="180" height="90" rx="12" fill="#0f9d6e22" stroke="#0f9d6e"/><text x="110" y="80" text-anchor="middle" font-weight="800">💻 Cliente</text><text x="110" y="104" text-anchor="middle" font-size="13" class="muted">tu navegador</text>
+<rect x="560" y="40" width="180" height="90" rx="12" fill="#2563eb22" stroke="#2563eb"/><text x="650" y="80" text-anchor="middle" font-weight="800">🖥️ Servidor</text><text x="650" y="104" text-anchor="middle" font-size="13" class="muted">web en puerto 80</text>
+<line x1="200" y1="70" x2="560" y2="70" stroke="#0f9d6e" stroke-width="2.5" class="flow"/><text x="380" y="60" text-anchor="middle" font-size="13">“GET /index.html” (petición)</text>
+<line x1="560" y1="110" x2="200" y2="110" stroke="#2563eb" stroke-width="2.5" class="flow"/><text x="380" y="135" text-anchor="middle" font-size="13">“200 OK + página” (respuesta)</text>
+</svg>
+</figure>
+<p>Casi todo en Internet funciona así. Como pentester <b>tú eres el cliente</b> y buscas servidores que respondan cosas que no deberían.</p>
+
+<h2>6. Usuarios, permisos y el principio de mínimo privilegio</h2>
+<p>Cada usuario solo puede hacer ciertas cosas. Un <b>ataque típico</b> tiene dos saltos:</p>
+<ol class="steps"><li><b>Acceso inicial</b>: entras como un usuario con pocos permisos (ej. <code>www-data</code>, el usuario del servidor web).</li>
+<li><b>Escalada de privilegios</b>: aprovechas un error de configuración para convertirte en <code>root</code>/<code>SYSTEM</code>.</li></ol>
+
+<h2>7. La tríada CIA y conceptos de seguridad</h2>
+<div class="table-wrap"><table>
+<tr><th>Pilar</th><th>Significa</th><th>Ataque que lo rompe</th></tr>
+<tr><td><b>C</b>onfidencialidad</td><td>Solo lo ve quien debe</td><td>Robo de base de datos</td></tr>
+<tr><td><b>I</b>ntegridad</td><td>Nadie lo modifica sin permiso</td><td>Cambiar el saldo de una cuenta</td></tr>
+<tr><td><b>D</b>isponibilidad (Availability)</td><td>Funciona cuando se necesita</td><td>Ataque DoS, ransomware</td></tr>
+</table></div>
+<div class="box def"><strong>📘 Vulnerabilidad, amenaza, exploit, riesgo</strong>
+<b>Vulnerabilidad</b>: el fallo (una puerta mal cerrada).<br>
+<b>Amenaza</b>: quien podría aprovecharlo (un ladrón).<br>
+<b>Exploit</b>: la técnica/código que lo aprovecha (la ganzúa).<br>
+<b>Payload</b>: lo que haces una vez dentro (llevarte la tele).<br>
+<b>Riesgo</b> = probabilidad × impacto.</div>
+<div class="box def"><strong>📘 CVE y CVSS</strong><b>CVE</b> es el “DNI” de una vulnerabilidad pública (ej. <code>CVE-2017-0144</code> = EternalBlue). <b>CVSS</b> es su nota de gravedad de 0 a 10. Lo usarás en el reporte.</div>
+
+<h2>🎥 Vídeos</h2>
+<div class="vlinks">
+<a href="https://www.youtube.com/results?search_query=como+funciona+un+ordenador+cpu+ram+disco+explicado" target="_blank" rel="noopener">Cómo funciona un ordenador</a>
+<a href="https://www.youtube.com/results?search_query=sistema+binario+explicado+facil" target="_blank" rel="noopener">Sistema binario fácil</a>
+<a href="https://www.youtube.com/results?search_query=hash+vs+cifrado+vs+codificacion" target="_blank" rel="noopener">Hash vs cifrado vs codificación</a>
+</div>
+
+<h2>📝 Evaluación del tema</h2>
+<script type="application/json" data-quiz="Cuestionario 00 · Fundamentos">
+[
+{"q":"¿Qué componente pierde su contenido al apagar el ordenador?","o":["Disco duro","RAM","SSD","USB"],"a":1,"e":"La RAM es memoria volátil. Por eso herramientas como Mimikatz leen credenciales de la memoria mientras el equipo está encendido."},
+{"q":"¿Cuánto vale el byte 11000000 en decimal?","o":["128","192","224","64"],"a":1,"e":"128 + 64 = 192."},
+{"q":"Base64 es…","o":["Un cifrado seguro","Un hash","Una codificación reversible por cualquiera","Un protocolo de red"],"a":2,"e":"Base64 solo cambia la representación. Si encuentras una contraseña en Base64, está prácticamente en texto claro."},
+{"q":"¿Cuál es el usuario con máximo privilegio en Linux?","o":["admin","root","SYSTEM","sudo"],"a":1,"e":"root (UID 0). En Windows el equivalente es NT AUTHORITY\\SYSTEM."},
+{"q":"Un servicio web se ejecuta como root y tiene una vulnerabilidad. Si la explotas, ¿con qué permisos ejecutas código?","o":["Los de tu usuario","Los de root","Ningún permiso","Los de invitado"],"a":1,"e":"El código inyectado se ejecuta con los permisos del proceso vulnerable."},
+{"q":"La herramienta o código que aprovecha una vulnerabilidad se llama…","o":["Payload","Exploit","Amenaza","CVE"],"a":1,"e":"El exploit aprovecha el fallo; el payload es lo que se ejecuta después (p. ej. una shell)."},
+{"q":"¿Qué pilar de la tríada CIA ataca principalmente un DoS?","o":["Confidencialidad","Integridad","Disponibilidad","Autenticación"],"a":2,"e":"Denegación de servicio = el sistema deja de estar disponible."},
+{"q":"El valor hexadecimal FF equivale a…","o":["15","100","255","256"],"a":2,"e":"F=15; 15×16+15 = 255."}
+]
+</script>
+
+<h3>✍️ Ejercicios</h3>
+<ol>
+<li>Convierte a binario: 10, 172, 254.</li>
+<li>Decodifica este Base64 en tu Kali: <code>cGFzc3dvcmQxMjM=</code></li>
+<li>Explica con una analogía propia la diferencia entre vulnerabilidad y exploit.</li>
+</ol>
+<details class="sol"><summary>Ver soluciones</summary><div>
+<p>1. <code>10 = 00001010</code>, <code>172 = 10101100</code>, <code>254 = 11111110</code>.</p>
+<p>2. <code>echo 'cGFzc3dvcmQxMjM=' | base64 -d</code> → <code>password123</code>.</p>
+<p>3. Ej.: vulnerabilidad = ventana del coche abierta; exploit = meter la mano por la ventana para abrir la puerta.</p>
+</div></details>
+
+<div class="lab"><h4>🧪 Práctica</h4>
+<p>Abre una terminal en Kali y ejecuta: <code>whoami</code>, <code>id</code>, <code>uname -a</code>, <code>free -h</code>, <code>ps aux | head</code>. Escribe en tus notas qué te dice cada comando (usuario, grupos, kernel, RAM y procesos).</p>
+<details class="sol"><summary>Ver solución</summary><div>
+<p><code>whoami</code> → tu usuario (kali). <code>id</code> → UID, GID y grupos (fíjate si estás en <code>sudo</code>). <code>uname -a</code> → versión del kernel (importante para exploits de kernel). <code>free -h</code> → memoria RAM. <code>ps aux</code> → procesos, con el usuario que ejecuta cada uno.</p></div></details>
+</div>
+
+</main>
+<nav class="toc"></nav>
+</div>
+<script src="../assets/app.js"></script>
+</body>
+</html>

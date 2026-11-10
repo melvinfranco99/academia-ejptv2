@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="es" data-root="">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Academia eJPTv2 → OSCP</title>
+<meta name="description" content="Curso completo, visual y en español para aprobar el eJPTv2 y prepararte para el OSCP: teoría, diagramas, glosario, cuestionarios, laboratorios y plantilla de reporte.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar"></aside>
+<main>
+<section class="hero">
+  <h1>De cero a eJPTv2… y rumbo al OSCP</h1>
+  <p>Un curso completo, visual y en español. Empezamos por lo más básico (qué es una IP, qué es una terminal) y subimos paso a paso hasta técnicas de nivel OSCP: Active Directory, pivoting, escalada de privilegios y redacción de reportes profesionales.</p>
+  <div class="progress"><div id="progressBar"></div></div>
+  <small id="progressLbl" style="opacity:.9"></small>
+</section>
+
+<div class="box tip"><strong>👋 Si partes de “saber un poquito de informática”</strong>
+Este curso está pensado justo para ti. No te saltes el <b>Nivel 0</b>: son las bases que el eJPTv2 da por supuestas. Cada tema tiene <b>definiciones</b>, <b>analogías</b>, <b>diagramas</b>, <b>ejemplos</b>, <b>comandos</b>, <b>vídeos recomendados</b> y termina con <b>cuestionario + ejercicios + práctica con solución</b>.</div>
+
+<h2 id="ruta">La ruta de aprendizaje</h2>
+<figure>
+<svg viewBox="0 0 900 230" role="img" aria-label="Ruta: Bases, eJPTv2, OSCP">
+  <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="#888"/></marker></defs>
+  <rect x="10" y="40" width="250" height="150" rx="16" fill="#2563eb22" stroke="#2563eb"/>
+  <text x="135" y="72" text-anchor="middle" font-weight="800" font-size="20">Nivel 0 · Bases</text>
+  <text x="135" y="102" text-anchor="middle" font-size="14" class="muted">Informática · Redes</text>
+  <text x="135" y="124" text-anchor="middle" font-size="14" class="muted">Linux · Windows</text>
+  <text x="135" y="160" text-anchor="middle" font-size="13">≈ nivel CompTIA A+/Net+/Sec+</text>
+  <line x1="262" y1="115" x2="320" y2="115" stroke="#888" stroke-width="3" marker-end="url(#ar)" class="flow"/>
+  <rect x="325" y="40" width="250" height="150" rx="16" fill="#0f9d6e22" stroke="#0f9d6e"/>
+  <text x="450" y="72" text-anchor="middle" font-weight="800" font-size="20">Nivel 1 · eJPTv2</text>
+  <text x="450" y="102" text-anchor="middle" font-size="14" class="muted">Recon · Escaneo · Web</text>
+  <text x="450" y="124" text-anchor="middle" font-size="14" class="muted">Explotación · Privesc · Pivoting</text>
+  <text x="450" y="160" text-anchor="middle" font-size="13">Examen práctico 48 h</text>
+  <line x1="577" y1="115" x2="635" y2="115" stroke="#888" stroke-width="3" marker-end="url(#ar)" class="flow"/>
+  <rect x="640" y="40" width="250" height="150" rx="16" fill="#dc262622" stroke="#dc2626"/>
+  <text x="765" y="72" text-anchor="middle" font-weight="800" font-size="20">Nivel 2 · OSCP</text>
+  <text x="765" y="102" text-anchor="middle" font-size="14" class="muted">Active Directory · Exploits</text>
+  <text x="765" y="124" text-anchor="middle" font-size="14" class="muted">Metodología manual · Reporte</text>
+  <text x="765" y="160" text-anchor="middle" font-size="13">Examen 24 h + 24 h reporte</text>
+</svg>
+<figcaption>Cada nivel se apoya en el anterior. Las flechas animadas indican el orden recomendado.</figcaption>
+</figure>
+
+<h2 id="modulos">Módulos</h2>
+<h3>Nivel 0 · Bases <span class="badge base">imprescindible</span></h3>
+<div class="grid">
+<a class="card" href="modulos/00-fundamentos.html"><span class="num">00</span><h3>Informática desde cero</h3><p>Hardware, sistema operativo, binario, archivos, procesos, cliente/servidor.</p></a>
+<a class="card" href="modulos/01-redes.html"><span class="num">01</span><h3>Redes</h3><p>IP, máscara, subredes, puertos, TCP/UDP, OSI, DNS, HTTP. Con calculadora.</p></a>
+<a class="card" href="modulos/02-linux.html"><span class="num">02</span><h3>Linux</h3><p>Terminal, ficheros, permisos, usuarios, procesos, redirecciones, bash.</p></a>
+<a class="card" href="modulos/03-windows.html"><span class="num">03</span><h3>Windows</h3><p>CMD, PowerShell, usuarios, servicios, registro, SMB y RDP.</p></a>
+</div>
+<h3>Nivel 1 · eJPTv2 <span class="badge ejpt">examen</span></h3>
+<div class="grid">
+<a class="card" href="modulos/04-metodologia.html"><span class="num">04</span><h3>Metodología y ética</h3><p>Fases de un pentest, alcance, legalidad, toma de notas.</p></a>
+<a class="card" href="modulos/05-reconocimiento.html"><span class="num">05</span><h3>Reconocimiento pasivo</h3><p>OSINT, whois, DNS, subdominios, Google dorks.</p></a>
+<a class="card" href="modulos/06-escaneo.html"><span class="num">06</span><h3>Escaneo con Nmap</h3><p>Descubrir hosts, puertos, versiones y SO. Scripts NSE.</p></a>
+<a class="card" href="modulos/07-enumeracion.html"><span class="num">07</span><h3>Enumeración de servicios</h3><p>FTP, SSH, SMB, HTTP, SMTP, MySQL, RDP, SNMP…</p></a>
+<a class="card" href="modulos/08-web.html"><span class="num">08</span><h3>Ataques web</h3><p>Fuzzing, SQLi, XSS, LFI/RFI, subida de ficheros, inyección de comandos, WordPress.</p></a>
+<a class="card" href="modulos/09-explotacion.html"><span class="num">09</span><h3>Explotación y Metasploit</h3><p>Searchsploit, msfconsole, payloads, reverse/bind shells, meterpreter.</p></a>
+<a class="card" href="modulos/10-passwords.html"><span class="num">10</span><h3>Contraseñas</h3><p>Hashes, John, Hashcat, Hydra, diccionarios, pass-the-hash.</p></a>
+<a class="card" href="modulos/11-postexplotacion.html"><span class="num">11</span><h3>Post-explotación Linux</h3><p>Enumeración local, SUID, sudo, cron, capabilities, kernel.</p></a>
+<a class="card" href="modulos/12-windows-privesc.html"><span class="num">12</span><h3>Privesc Windows</h3><p>Servicios, tokens, UAC, credenciales guardadas, Mimikatz.</p></a>
+<a class="card" href="modulos/13-pivoting.html"><span class="num">13</span><h3>Pivoting</h3><p>Saltar a redes internas: autoroute, proxychains, chisel, ligolo.</p></a>
+</div>
+<h3>Nivel 2 · Hacia OSCP <span class="badge oscp">avanzado</span></h3>
+<div class="grid">
+<a class="card" href="modulos/14-active-directory.html"><span class="num">14</span><h3>Active Directory</h3><p>Kerberos, AS-REP roasting, Kerberoasting, BloodHound, movimiento lateral.</p></a>
+<a class="card" href="modulos/15-reportes.html"><span class="num">15</span><h3>Reportes profesionales</h3><p>Estructura, CVSS, capturas, plantilla descargable.</p></a>
+<a class="card" href="modulos/16-examen.html"><span class="num">16</span><h3>Estrategia de examen</h3><p>Cómo es el eJPTv2 y el OSCP, gestión del tiempo, checklist.</p></a>
+</div>
+<h3>Recursos</h3>
+<div class="grid">
+<a class="card" href="glosario.html"><h3>📖 Glosario</h3><p>Buscador con términos, herramientas y comandos explicados fácil.</p></a>
+<a class="card" href="cheatsheet.html"><h3>⚡ Chuleta</h3><p>Todos los comandos clave en una página, por fases.</p></a>
+<a class="card" href="examen-final.html"><h3>🎯 Simulacro final</h3><p>Examen tipo eJPTv2 con preguntas sobre un escenario.</p></a>
+<a class="card" href="laboratorios.html"><h3>🧪 Laboratorios</h3><p>Máquinas gratuitas ordenadas por dificultad, con guía.</p></a>
+</div>
+
+<h2 id="comparativa">eJPTv2 vs OSCP de un vistazo</h2>
+<div class="table-wrap"><table>
+<tr><th></th><th>eJPTv2 (INE)</th><th>OSCP (OffSec)</th></tr>
+<tr><td>Nivel</td><td>Junior / de entrada</td><td>Intermedio, muy reconocido en RR.HH.</td></tr>
+<tr><td>Formato</td><td>Laboratorio en navegador + ~35 preguntas tipo test sobre lo que encuentras</td><td>Laboratorio con máquinas independientes + un conjunto de Active Directory; obtienes “flags” (proof.txt)</td></tr>
+<tr><td>Duración</td><td>48 horas</td><td>23 h 45 min de práctica + 24 h para entregar el reporte</td></tr>
+<tr><td>Reporte</td><td>No se exige</td><td><b>Obligatorio</b> (sin reporte válido, suspenso)</td></tr>
+<tr><td>Metasploit</td><td>Permitido libremente</td><td>Restringido (solo en una máquina)</td></tr>
+<tr><td>Libros/Internet</td><td>Sí, examen “a libro abierto”</td><td>Sí, pero sin IA ni ayuda de otras personas</td></tr>
+</table></div>
+<div class="box warn"><strong>⚠️ Los formatos cambian</strong>Los detalles de los exámenes (número de preguntas, reglas de herramientas, puntuación) se actualizan cada cierto tiempo. Antes de examinarte consulta siempre la web oficial de INE y de OffSec.</div>
+
+<h2 id="plan">Plan de estudio sugerido (≈ 12 semanas)</h2>
+<div class="table-wrap"><table>
+<tr><th>Semana</th><th>Temas</th><th>Práctica</th></tr>
+<tr><td>1–2</td><td>00, 01, 02, 03</td><td>OverTheWire Bandit (niveles 0-15), TryHackMe “Pre Security”</td></tr>
+<tr><td>3</td><td>04, 05, 06</td><td>Escanear tu propio laboratorio (Metasploitable 2)</td></tr>
+<tr><td>4–5</td><td>07, 08</td><td>DVWA, PortSwigger Academy (labs “Apprentice”)</td></tr>
+<tr><td>6–7</td><td>09, 10, 11, 12</td><td>Máquinas fáciles de HackTheBox / TryHackMe / VulnHub</td></tr>
+<tr><td>8</td><td>13 + simulacro</td><td>Laboratorio de pivoting de 2 redes. Examen eJPTv2 🎓</td></tr>
+<tr><td>9–12</td><td>14, 15, 16</td><td>Lista de máquinas “tipo OSCP”, Active Directory en casa, escribir reportes</td></tr>
+</table></div>
+</main>
+<nav class="toc"></nav>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

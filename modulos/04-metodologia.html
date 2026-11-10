@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es" data-root="../">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>04 · Metodología y ética · Academia eJPTv2</title>
+<meta name="description" content="Fases de un pentest, tipos de auditoría, alcance, legalidad y toma de notas profesional.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar"></aside>
+<main>
+<span class="badge ejpt">Nivel 1 · eJPTv2</span>
+<h1>04 · Metodología y ética del pentesting</h1>
+<p class="lead">Hackear no es ir probando cosas al azar. Es un proceso ordenado. Si sigues siempre las mismas fases, no te pierdes y no se te olvida nada (clave en el examen).</p>
+
+<h2>1. Las fases de un pentest</h2>
+<figure>
+<svg viewBox="0 0 860 220" role="img" aria-label="Fases: recon, escaneo, explotación, post, reporte, ciclo">
+<defs><marker id="m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="#888"/></marker></defs>
+<g text-anchor="middle">
+<circle cx="90" cy="90" r="60" fill="#2563eb22" stroke="#2563eb"/><text x="90" y="85" font-weight="800">1</text><text x="90" y="105" font-size="12">Reconoci-</text><text x="90" y="120" font-size="12">miento</text>
+<circle cx="260" cy="90" r="60" fill="#0f9d6e22" stroke="#0f9d6e"/><text x="260" y="85" font-weight="800">2</text><text x="260" y="105" font-size="12">Escaneo /</text><text x="260" y="120" font-size="12">Enumeración</text>
+<circle cx="430" cy="90" r="60" fill="#d9770622" stroke="#d97706"/><text x="430" y="85" font-weight="800">3</text><text x="430" y="108" font-size="12">Explotación</text>
+<circle cx="600" cy="90" r="60" fill="#dc262622" stroke="#dc2626"/><text x="600" y="82" font-weight="800">4</text><text x="600" y="100" font-size="12">Post-</text><text x="600" y="115" font-size="12">explotación</text>
+<circle cx="770" cy="90" r="60" fill="#a855f722" stroke="#a855f7"/><text x="770" y="85" font-weight="800">5</text><text x="770" y="105" font-size="12">Reporte</text>
+</g>
+<g stroke="#888" stroke-width="2.5"><line x1="150" y1="90" x2="198" y2="90" marker-end="url(#m)" class="flow"/><line x1="320" y1="90" x2="368" y2="90" marker-end="url(#m)" class="flow"/><line x1="490" y1="90" x2="538" y2="90" marker-end="url(#m)" class="flow"/><line x1="660" y1="90" x2="708" y2="90" marker-end="url(#m)" class="flow"/></g>
+<path d="M600 150 Q430 210 260 150" fill="none" stroke="#dc2626" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#m)"/>
+<text x="430" y="200" text-anchor="middle" font-size="12" fill="#dc2626">la post-explotación abre nuevas redes → se repite el ciclo (pivoting)</text>
+</svg></figure>
+<div class="table-wrap"><table>
+<tr><th>Fase</th><th>Pregunta que respondes</th><th>Herramientas típicas</th></tr>
+<tr><td>1. Reconocimiento</td><td>¿Qué existe? ¿Qué sé sin tocar?</td><td>whois, Google, theHarvester, DNS</td></tr>
+<tr><td>2. Escaneo/Enumeración</td><td>¿Qué puertos y servicios hay? ¿Qué versión?</td><td>Nmap, nikto, gobuster, enum4linux</td></tr>
+<tr><td>3. Explotación</td><td>¿Cómo entro?</td><td>searchsploit, Metasploit, exploits manuales</td></tr>
+<tr><td>4. Post-explotación</td><td>¿Qué hago ahora? ¿Puedo ser root? ¿Hay más redes?</td><td>linpeas, mimikatz, pivoting</td></tr>
+<tr><td>5. Reporte</td><td>¿Cómo lo cuento para que lo arreglen?</td><td>Markdown, plantillas, capturas</td></tr>
+</table></div>
+<div class="box tip"><strong>💡 El 80 % del trabajo es enumerar</strong>El error del principiante es querer “explotar” ya. Los profesionales enumeran a fondo: la vía de entrada casi siempre está en un detalle que se pasó por alto. Lema del OSCP: <b>“enumerate harder”</b>.</div>
+
+<h2>2. Tipos de auditoría según la información</h2>
+<div class="table-wrap"><table>
+<tr><th>Tipo</th><th>Qué sabes</th><th>Analogía</th></tr>
+<tr><td><b>Caja negra</b> (black box)</td><td>Nada, solo una IP o dominio</td><td>Ladrón que no conoce la casa</td></tr>
+<tr><td><b>Caja gris</b> (grey box)</td><td>Algo: unas credenciales de usuario normal</td><td>Un empleado descontento</td></tr>
+<tr><td><b>Caja blanca</b> (white box)</td><td>Todo: código, diagramas, accesos</td><td>El arquitecto de la casa</td></tr>
+</table></div>
+
+<h2>3. Alcance (scope) y reglas de enfrentamiento</h2>
+<div class="box def"><strong>📘 Alcance</strong>Es el <b>contrato</b> que define qué IPs/dominios puedes tocar, cuándo, con qué técnicas y qué está prohibido (p. ej. ataques de denegación de servicio). Salirte del alcance es ilegal aunque te hayan contratado.</div>
+<div class="box danger"><strong>🚫 Antes de tocar nada</strong>Necesitas <b>autorización por escrito</b> (el “get out of jail free card”): un documento firmado que dice qué puedes atacar y cuándo. En el examen y en los laboratorios, tu “alcance” son las máquinas que te asignan: ni una IP más.</div>
+
+<h2>4. Estándares que deberías conocer de nombre</h2>
+<ul>
+<li><b>PTES</b> (Penetration Testing Execution Standard): las 7 fases de un pentest.</li>
+<li><b>OWASP</b>: referencia en seguridad web. El <b>OWASP Top 10</b> son los 10 fallos web más comunes (lo verás en el módulo 08).</li>
+<li><b>MITRE ATT&CK</b>: catálogo de técnicas que usan los atacantes reales.</li>
+<li><b>Cyber Kill Chain</b>: modelo de Lockheed Martin de las etapas de un ataque.</li>
+</ul>
+
+<h2>5. Toma de notas (otra vez, porque es así de importante)</h2>
+<p>Durante todo el proceso: una captura por cada hallazgo importante (con la IP visible y la hora), el comando exacto que funcionó, y las credenciales encontradas. En el OSCP, sin esto <b>no puedes escribir el reporte</b> y suspendes aunque hayas hackeado todo.</p>
+
+<h2>📝 Evaluación del tema</h2>
+<script type="application/json" data-quiz="Cuestionario 04 · Metodología">
+[
+{"q":"¿Cuál es el orden correcto de las fases?","o":["Explotación → Recon → Reporte","Recon → Escaneo → Explotación → Post → Reporte","Escaneo → Explotación → Recon","Reporte → Recon → Escaneo"],"a":1,"e":"Siempre: reconocer, escanear/enumerar, explotar, post-explotar, reportar."},
+{"q":"En una auditoría 'caja negra' el pentester…","o":["Tiene el código fuente","No tiene información previa","Es un empleado","Conoce la red entera"],"a":1,"e":"Caja negra = sin información, como un atacante externo real."},
+{"q":"¿Qué fase consume más tiempo y es la más importante?","o":["Explotación","Enumeración","Reporte","Instalación"],"a":1,"e":"'Enumerate harder'. La vía de entrada aparece enumerando a fondo."},
+{"q":"¿Qué documento te autoriza legalmente a hacer el pentest?","o":["El CVE","La autorización escrita / alcance firmado","El Top 10 de OWASP","El reporte final"],"a":1,"e":"Sin autorización escrita y dentro del alcance, es delito."},
+{"q":"¿Qué es el OWASP Top 10?","o":["Las 10 mejores herramientas","Los 10 riesgos web más comunes","10 puertos peligrosos","10 fases del pentest"],"a":1,"e":"Un ranking de las vulnerabilidades web más frecuentes."}
+]
+</script>
+<div class="lab"><h4>🧪 Práctica</h4><p>Crea tu plantilla de notas: una carpeta con los 5 ficheros (recon, enumeración, explotación, privesc, credenciales). La usarás en todas las máquinas a partir de ahora.</p></div>
+
+</main>
+<nav class="toc"></nav>
+</div>
+<script src="../assets/app.js"></script>
+</body>
+</html>

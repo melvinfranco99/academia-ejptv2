@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="es" data-root="../">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>15 · Cómo escribir el reporte · Academia eJPTv2</title>
+<meta name="description" content="Estructura de un informe de pentest profesional, CVSS, capturas, lenguaje y plantilla descargable.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar"></aside>
+<main>
+<span class="badge oscp">Nivel 2 · Hacia OSCP</span>
+<h1>15 · El reporte profesional</h1>
+<p class="lead">En el OSCP, <b>sin reporte válido suspendes</b> aunque hackees todo. Y en el mundo real, el reporte <b>es</b> el producto que entregas al cliente. Aquí aprendes a hacerlo bien y tienes una plantilla lista.</p>
+
+<div class="box tip"><strong>⬇️ Plantilla descargable</strong>
+<a class="btn" href="../plantillas/plantilla-reporte.md" download style="text-decoration:none;color:#fff">Descargar plantilla (Markdown)</a>
+&nbsp;<a class="btn sec" href="../plantillas/plantilla-reporte.md" target="_blank" style="text-decoration:none">Ver en el navegador</a>
+<br><small>Markdown se convierte fácil a PDF/Word. OffSec también ofrece su propia plantilla oficial; úsala en el examen real.</small></div>
+
+<h2>1. ¿Para quién escribes? Dos lectores</h2>
+<figure>
+<svg viewBox="0 0 760 160" role="img" aria-label="Resumen ejecutivo vs técnico">
+<rect x="20" y="20" width="350" height="120" rx="12" fill="#2563eb22" stroke="#2563eb"/>
+<text x="195" y="50" text-anchor="middle" font-weight="800">👔 Resumen ejecutivo</text>
+<text x="195" y="78" text-anchor="middle" font-size="12">Para jefes / no técnicos</text>
+<text x="195" y="100" text-anchor="middle" font-size="12" class="muted">Riesgo del negocio, sin jerga</text>
+<text x="195" y="120" text-anchor="middle" font-size="12" class="muted">"Un atacante podría robar los datos de clientes"</text>
+<rect x="390" y="20" width="350" height="120" rx="12" fill="#0f9d6e22" stroke="#0f9d6e"/>
+<text x="565" y="50" text-anchor="middle" font-weight="800">🔧 Detalle técnico</text>
+<text x="565" y="78" text-anchor="middle" font-size="12">Para administradores / técnicos</text>
+<text x="565" y="100" text-anchor="middle" font-size="12" class="muted">Pasos exactos, comandos, capturas</text>
+<text x="565" y="120" text-anchor="middle" font-size="12" class="muted">Para reproducir y arreglar</text>
+</svg></figure>
+
+<h2>2. Estructura estándar de un informe</h2>
+<ol class="steps">
+<li><b>Portada</b>: cliente, fechas, autor, confidencialidad.</li>
+<li><b>Resumen ejecutivo</b>: en lenguaje llano, el estado general y el riesgo para el negocio.</li>
+<li><b>Alcance y metodología</b>: qué se probó, cuándo, con qué enfoque (caja negra/gris).</li>
+<li><b>Resumen de hallazgos</b>: tabla con cada vulnerabilidad y su severidad.</li>
+<li><b>Hallazgos detallados</b>: uno por vulnerabilidad (ver estructura abajo).</li>
+<li><b>Recomendaciones</b>: cómo arreglar cada cosa, priorizado.</li>
+<li><b>Anexos</b>: salidas completas de herramientas, listados.</li>
+</ol>
+
+<h2>3. Cómo se escribe CADA hallazgo (lo más importante)</h2>
+<div class="box example"><strong>Plantilla de un hallazgo</strong>
+<div class="table-wrap"><table>
+<tr><th>Campo</th><th>Qué pones</th></tr>
+<tr><td><b>Título</b></td><td>Claro: "Inyección SQL en el login de la aplicación de facturación"</td></tr>
+<tr><td><b>Severidad</b></td><td>Crítica / Alta / Media / Baja / Informativa (+ puntuación CVSS)</td></tr>
+<tr><td><b>Sistemas afectados</b></td><td>IP, URL, puerto exactos</td></tr>
+<tr><td><b>Descripción</b></td><td>Qué es la vulnerabilidad en 2-3 frases</td></tr>
+<tr><td><b>Impacto</b></td><td>Qué consigue el atacante (robo de datos, acceso total…)</td></tr>
+<tr><td><b>Prueba de concepto (PoC)</b></td><td>Pasos numerados + comandos exactos + <b>capturas</b> con la IP y hora visibles</td></tr>
+<tr><td><b>Remediación</b></td><td>Cómo arreglarlo (consultas parametrizadas, actualizar, etc.)</td></tr>
+<tr><td><b>Referencias</b></td><td>CVE, enlace OWASP, CWE</td></tr>
+</table></div></div>
+
+<h2>4. Severidad y CVSS</h2>
+<div class="box def"><strong>📘 CVSS</strong>Sistema para puntuar la gravedad de 0 a 10. Tiene en cuenta si se explota por red, si necesita privilegios, el impacto en confidencialidad/integridad/disponibilidad…</div>
+<div class="table-wrap"><table>
+<tr><th>CVSS</th><th>Severidad</th><th>Color</th></tr>
+<tr><td>9.0 – 10.0</td><td>Crítica</td><td>🔴</td></tr>
+<tr><td>7.0 – 8.9</td><td>Alta</td><td>🟠</td></tr>
+<tr><td>4.0 – 6.9</td><td>Media</td><td>🟡</td></tr>
+<tr><td>0.1 – 3.9</td><td>Baja</td><td>🟢</td></tr>
+</table></div>
+<p>Usa la calculadora oficial: <a href="https://www.first.org/cvss/calculator/3.1" target="_blank" rel="noopener">first.org/cvss/calculator</a>.</p>
+
+<h2>5. Capturas de pantalla: reglas de oro</h2>
+<div class="box warn"><strong>⚠️ En el examen OSCP esto es obligatorio</strong>
+Cada paso que te dé acceso o flag debe tener captura con:<br>
+• La <b>IP de la víctima</b> visible (sale en el prompt o en el comando).<br>
+• El contenido de <code>local.txt</code> / <code>proof.txt</code> <b>junto a</b> la salida de <code>ipconfig</code>/<code>ip a</code> que muestra la IP.<br>
+• El comando que ejecutaste visible.</div>
+
+<h2>6. Ejemplo de un hallazgo redactado</h2>
+<pre><span class="c">## Hallazgo 1 — Inyección SQL en /login.php [CRÍTICA · CVSS 9.8]</span>
+
+<span class="o">Sistemas afectados:</span> http://10.10.10.5/login.php (puerto 80)
+
+<span class="o">Descripción:</span> El parámetro "usuario" se concatena directamente en una
+consulta SQL sin sanear, permitiendo inyección de código SQL.
+
+<span class="o">Impacto:</span> Un atacante no autenticado puede saltarse el login y extraer
+toda la base de datos de usuarios, incluyendo hashes de contraseñas.
+
+<span class="o">Prueba de concepto:</span>
+1. Navegar a http://10.10.10.5/login.php
+2. Introducir en el campo usuario:  ' OR '1'='1' --
+3. Se obtiene acceso como administrador (captura 1).
+4. Con sqlmap se vuelca la base de datos (captura 2):
+   sqlmap -u "http://10.10.10.5/login.php" --data="user=x&pass=x" --dump
+
+<span class="o">Remediación:</span> Usar consultas parametrizadas (prepared statements).
+Validar y sanear toda entrada del usuario. Aplicar mínimo privilegio a la BD.
+
+<span class="o">Referencias:</span> OWASP A03:2021, CWE-89</pre>
+
+<div class="box oscp"><strong>🔴 Nivel OSCP: consejos de examen</strong>
+Toma las capturas <b>mientras</b> hackeas, no al final (puede que la máquina se reinicie). Lleva la plantilla ya rellena con tu nombre y OSID. Escribe el reporte el mismo día. Numera las máquinas y pon la dirección IP en cada sección. Un reporte claro que permita <b>reproducir</b> cada paso es lo que aprueba.</div>
+
+<h2>🎥 Vídeos y recursos</h2>
+<div class="vlinks">
+<a href="https://www.offsec.com/pwk-online/PWK-Example-Report-v1.pdf" target="_blank" rel="noopener">Reporte de ejemplo OffSec (PDF)</a>
+<a href="https://www.youtube.com/results?search_query=oscp+report+writing+tutorial" target="_blank" rel="noopener">OSCP report writing</a>
+<a href="https://github.com/noraj/OSCP-Exam-Report-Template-Markdown" target="_blank" rel="noopener">Plantillas OSCP en GitHub</a>
+</div>
+
+<h2>📝 Evaluación del tema</h2>
+<script type="application/json" data-quiz="Cuestionario 15 · Reportes">
+[
+{"q":"En el examen OSCP, si hackeas todo pero el reporte es inválido…","o":["Apruebas igual","Suspendes","Repites solo el reporte","Da igual"],"a":1,"e":"El reporte es obligatorio; sin él válido, suspenso."},
+{"q":"El resumen ejecutivo está dirigido a…","o":["Administradores de sistemas","Directivos / personas no técnicas","Otros hackers","El propio pentester"],"a":1,"e":"Lenguaje de negocio, sin jerga técnica."},
+{"q":"¿Qué DEBE aparecer en las capturas del OSCP?","o":["Tu cara","La IP de la víctima junto al contenido del flag","El reloj del sistema","El logo"],"a":1,"e":"IP visible + proof.txt + comando, para demostrar el compromiso."},
+{"q":"Un CVSS de 9.8 es severidad…","o":["Baja","Media","Alta","Crítica"],"a":3,"e":"9.0–10.0 = Crítica."},
+{"q":"La sección 'PoC' de un hallazgo contiene…","o":["Opiniones","Los pasos exactos para reproducir el ataque","El precio","Nada técnico"],"a":1,"e":"Prueba de concepto: pasos y comandos reproducibles."},
+{"q":"¿Cuándo tomas las capturas en el examen?","o":["Al final de todo","Mientras explotas cada máquina","Nunca","Solo del root"],"a":1,"e":"Durante el ataque, por si la máquina se reinicia."},
+{"q":"La sección de remediación sirve para…","o":["Presumir","Decir al cliente cómo arreglar la vulnerabilidad","Atacar más","Rellenar"],"a":1,"e":"Es el valor real para el cliente: cómo solucionarlo."}
+]
+</script>
+<div class="lab"><h4>🧪 Práctica</h4><p>Coge una máquina que ya hayas resuelto y escribe su reporte completo con la plantilla descargable: resumen ejecutivo, 2-3 hallazgos con PoC y capturas, y remediaciones. Conviértelo a PDF (<code>pandoc reporte.md -o reporte.pdf</code>).</p></div>
+
+</main>
+<nav class="toc"></nav>
+</div>
+<script src="../assets/app.js"></script>
+</body>
+</html>

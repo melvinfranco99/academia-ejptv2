@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="es" data-root="../">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>07 · Enumeración de servicios · Academia eJPTv2</title>
+<meta name="description" content="Cómo enumerar FTP, SSH, SMB, HTTP, SMTP, DNS, SNMP, MySQL, RDP servicio por servicio.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar"></aside>
+<main>
+<span class="badge ejpt">Nivel 1 · eJPTv2</span>
+<h1>07 · Enumeración de servicios</h1>
+<p class="lead">Ya sabes qué puertos hay abiertos. Ahora exprimes cada servicio para encontrar la vía de entrada: usuarios, versiones, ficheros compartidos, logins por defecto…</p>
+<div class="box tip"><strong>💡 La mentalidad</strong>Por cada puerto abierto pregúntate: ¿puedo entrar sin credenciales? ¿hay una versión vulnerable? ¿hay información (usuarios, ficheros) que me ayude en otro servicio?</div>
+
+<h2>21 · FTP</h2>
+<pre><span class="p">$</span> nmap -p21 -sC -sV 10.0.2.4
+<span class="p">$</span> ftp 10.0.2.4            <span class="c"># prueba usuario: anonymous  contraseña: (vacía)</span>
+<span class="c"># Dentro del FTP:</span>
+ftp&gt; ls          ftp&gt; get fichero.txt       ftp&gt; put shell.php     ftp&gt; binary</pre>
+<div class="box warn"><strong>⚠️ Qué buscar</strong>Login <b>anónimo</b>, ficheros con credenciales, posibilidad de <b>subir</b> ficheros (si el FTP apunta a la carpeta web, sube una webshell). Versión vulnerable (vsftpd 2.3.4 tiene backdoor).</div>
+
+<h2>22 · SSH</h2>
+<pre><span class="p">$</span> nmap -p22 -sV 10.0.2.4
+<span class="p">$</span> ssh usuario@10.0.2.4
+<span class="c"># Enumerar usuarios válidos / versión. Si tienes credenciales o una clave id_rsa:</span>
+<span class="p">$</span> ssh -i id_rsa usuario@10.0.2.4</pre>
+<p>SSH casi nunca es la vía de entrada directa salvo fuerza bruta con credenciales débiles (módulo 10) o una clave privada encontrada en otro servicio.</p>
+
+<h2>139/445 · SMB (el más rentable)</h2>
+<pre><span class="p">$</span> enum4linux -a 10.0.2.4                       <span class="c"># todo-en-uno: usuarios, shares, grupos</span>
+<span class="p">$</span> smbclient -L //10.0.2.4/ -N                  <span class="c"># listar shares sin login</span>
+<span class="p">$</span> smbclient //10.0.2.4/tmp -N                  <span class="c"># conectar a un share</span>
+<span class="p">$</span> smbmap -H 10.0.2.4                            <span class="c"># shares y permisos (R/W)</span>
+<span class="p">$</span> crackmapexec smb 10.0.2.4 --shares -u '' -p ''
+<span class="p">$</span> nmap -p445 --script smb-vuln-ms17-010 10.0.2.5   <span class="c"># EternalBlue</span></pre>
+<div class="box tip"><strong>💡 Oro en SMB</strong>Shares accesibles sin contraseña, ficheros de configuración, listas de usuarios (para fuerza bruta en otros servicios) y vulnerabilidades como MS17-010.</div>
+
+<h2>80/443 · HTTP (su propio módulo: el 08)</h2>
+<pre><span class="p">$</span> whatweb http://10.0.2.4         <span class="c"># tecnologías</span>
+<span class="p">$</span> nikto -h http://10.0.2.4        <span class="c"># escáner de vulns web rápido</span>
+<span class="p">$</span> gobuster dir -u http://10.0.2.4 -w /usr/share/wordlists/dirb/common.txt
+<span class="p">$</span> curl -s http://10.0.2.4/robots.txt</pre>
+
+<h2>25 · SMTP</h2>
+<pre><span class="p">$</span> nmap -p25 --script smtp-commands,smtp-enum-users 10.0.2.4
+<span class="c"># Enumerar usuarios válidos con VRFY (manual con netcat):</span>
+<span class="p">$</span> nc 10.0.2.4 25
+VRFY root        <span class="c"># 252 = existe, 550 = no existe</span></pre>
+
+<h2>53 · DNS</h2>
+<pre><span class="p">$</span> dig AXFR dominio.local @10.0.2.4     <span class="c"># transferencia de zona</span>
+<span class="p">$</span> nmap -p53 --script dns-* 10.0.2.4</pre>
+
+<h2>161/udp · SNMP</h2>
+<pre><span class="p">$</span> snmpwalk -v2c -c public 10.0.2.4     <span class="c"># 'public' = comunidad por defecto</span>
+<span class="p">$</span> onesixtyone 10.0.2.4 public
+<span class="c"># SNMP puede filtrar procesos, usuarios, software y hasta rutas internas</span></pre>
+
+<h2>3306 · MySQL / 1433 · MSSQL</h2>
+<pre><span class="p">$</span> mysql -h 10.0.2.4 -u root -p         <span class="c"># prueba root sin contraseña</span>
+<span class="p">$</span> nmap -p3306 --script mysql-empty-password,mysql-info 10.0.2.4</pre>
+
+<h2>3389 · RDP</h2>
+<pre><span class="p">$</span> nmap -p3389 --script rdp-* 10.0.2.5
+<span class="p">$</span> xfreerdp /u:user /p:pass /v:10.0.2.5</pre>
+
+<h2>Tabla resumen: “qué hago en cada puerto”</h2>
+<div class="table-wrap"><table>
+<tr><th>Puerto</th><th>Primer comando</th><th>Qué busco</th></tr>
+<tr><td>21 FTP</td><td><code>ftp IP</code> (anonymous)</td><td>Login anónimo, subida de ficheros</td></tr>
+<tr><td>22 SSH</td><td><code>nmap -sV</code></td><td>Versión, fuerza bruta con credenciales</td></tr>
+<tr><td>25 SMTP</td><td><code>nc IP 25</code> + VRFY</td><td>Usuarios válidos</td></tr>
+<tr><td>53 DNS</td><td><code>dig AXFR</code></td><td>Subdominios, hosts internos</td></tr>
+<tr><td>80 HTTP</td><td><code>gobuster</code>, <code>nikto</code></td><td>Rutas ocultas, CMS, vulns web</td></tr>
+<tr><td>139/445 SMB</td><td><code>enum4linux -a</code></td><td>Shares, usuarios, MS17-010</td></tr>
+<tr><td>161 SNMP</td><td><code>snmpwalk -c public</code></td><td>Procesos, usuarios, software</td></tr>
+<tr><td>3306 MySQL</td><td><code>mysql -u root</code></td><td>Credenciales por defecto</td></tr>
+<tr><td>3389 RDP</td><td><code>xfreerdp</code></td><td>Acceso gráfico con credenciales</td></tr>
+</table></div>
+
+<div class="box oscp"><strong>🔴 Nivel OSCP</strong>Enumera cada servicio <b>a mano</b> además de con scripts. Lee el banner, prueba credenciales por defecto, visita cada página web. El examen premia a quien enumera con paciencia, no a quien lanza un escáner y se rinde.</div>
+
+<h2>📝 Evaluación del tema</h2>
+<script type="application/json" data-quiz="Cuestionario 07 · Enumeración">
+[
+{"q":"¿Qué herramienta hace enumeración SMB completa (usuarios, shares, grupos)?","o":["nikto","enum4linux","hydra","dig"],"a":1,"e":"enum4linux -a es el todo-en-uno de SMB."},
+{"q":"Para probar login anónimo FTP usas usuario…","o":["root","anonymous","admin","guest"],"a":1,"e":"anonymous con contraseña vacía o cualquier correo."},
+{"q":"¿Qué comando de SMTP comprueba si un usuario existe?","o":["HELP","VRFY root","LIST","USER"],"a":1,"e":"VRFY: 252 existe, 550 no existe."},
+{"q":"La comunidad SNMP por defecto que siempre pruebas es…","o":["admin","private","public","snmp"],"a":2,"e":"'public' (lectura) y 'private' (escritura)."},
+{"q":"¿Qué script Nmap detecta EternalBlue en SMB?","o":["smb-enum-shares","smb-vuln-ms17-010","smb-os-discovery","ftp-anon"],"a":1,"e":"smb-vuln-ms17-010."},
+{"q":"¿Por qué enumeras usuarios en un servicio aunque no puedas entrar por él?","o":["Para nada","Porque esos usuarios sirven para atacar otros servicios (SSH, SMB, RDP)","Para borrarlos","Para el reporte solo"],"a":1,"e":"Las listas de usuarios alimentan la fuerza bruta en todos los servicios."}
+]
+</script>
+<div class="lab"><h4>🧪 Práctica</h4><p>Sobre Metasploitable 2: ejecuta <code>enum4linux -a 10.0.2.4</code>, entra por FTP anónimo, lista los shares SMB y prueba <code>mysql -h 10.0.2.4 -u root</code> sin contraseña. Documenta cada hallazgo. Al menos uno te dará acceso.</p>
+<details class="sol"><summary>Pistas</summary><div><p>En Metasploitable el FTP (vsftpd 2.3.4) y varios servicios son vulnerables; el MySQL root suele tener contraseña vacía; enum4linux lista muchos usuarios. Guárdalos para el módulo 09 y 10.</p></div></details></div>
+
+</main>
+<nav class="toc"></nav>
+</div>
+<script src="../assets/app.js"></script>
+</body>
+</html>

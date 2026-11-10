@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="es" data-root="../">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>16 · Estrategia de examen · Academia eJPTv2</title>
+<meta name="description" content="Cómo es el eJPTv2 y el OSCP, gestión del tiempo, checklist de ataque y errores a evitar.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar"></aside>
+<main>
+<span class="badge ejpt">eJPTv2</span><span class="badge oscp">OSCP</span>
+<h1>16 · Estrategia de examen</h1>
+<p class="lead">Saber hackear no basta: hay que gestionar el tiempo, el estrés y el método. Aquí tienes la estrategia para el eJPTv2 y el OSCP.</p>
+
+<h2>1. El examen eJPTv2</h2>
+<div class="box def"><strong>📘 Cómo es</strong>Un laboratorio en el navegador con varias máquinas en red. Respondes un conjunto de preguntas tipo test (del estilo "¿cuál es la versión del servicio del puerto X?", "¿cuál es la flag de la máquina Y?"). Tienes <b>48 horas</b>, es a libro abierto y Metasploit está permitido. Puedes <b>reiniciar</b> el laboratorio.</div>
+<div class="table-wrap"><table>
+<tr><th>Consejo eJPTv2</th><th>Por qué</th></tr>
+<tr><td>Lee TODAS las preguntas antes de empezar</td><td>Te dicen qué buscar (puertos, servicios, ficheros)</td></tr>
+<tr><td>Haz un escaneo completo de toda la red</td><td>Descubres todas las máquinas y puertos</td></tr>
+<tr><td>Usa el pivoting</td><td>Hay máquinas internas no accesibles directamente</td></tr>
+<tr><td>Prueba credenciales encontradas en TODAS las máquinas</td><td>La reutilización es habitual</td></tr>
+<tr><td>Metasploit es tu amigo aquí</td><td>Permitido sin límite; acelera mucho</td></tr>
+<tr><td>Guarda cada dato (IPs, versiones, flags)</td><td>Las preguntas los piden literalmente</td></tr>
+</table></div>
+
+<h2>2. El examen OSCP</h2>
+<div class="box def"><strong>📘 Cómo es</strong>23 h 45 min de examen práctico + 24 h para el reporte. Normalmente: un conjunto de máquinas independientes y un <b>dominio Active Directory</b> encadenado. Se puntúa por objetivos (local.txt y proof.txt). Metasploit solo en una máquina. Prohibido: herramientas automáticas de explotación masiva, IA y ayuda de terceros.</div>
+<div class="box warn"><strong>⚠️ Necesitas una puntuación mínima Y un reporte válido</strong>Consulta en la web oficial de OffSec el reparto de puntos y el umbral vigentes (cambian). La cadena de Active Directory suele valer un bloque grande: no la dejes para el final.</div>
+
+<h2>3. Gestión del tiempo (OSCP, 24h)</h2>
+<figure>
+<svg viewBox="0 0 800 130" role="img" aria-label="Línea de tiempo del examen">
+<line x1="30" y1="70" x2="770" y2="70" stroke="#888" stroke-width="2"/>
+<g text-anchor="middle" font-size="12">
+<circle cx="110" cy="70" r="7" fill="#0f9d6e"/><text x="110" y="50">0-1h</text><text x="110" y="100" class="muted">escaneo de TODO</text>
+<circle cx="300" cy="70" r="7" fill="#2563eb"/><text x="300" y="50">1-10h</text><text x="300" y="100" class="muted">AD + máquinas fáciles</text>
+<circle cx="500" cy="70" r="7" fill="#d97706"/><text x="500" y="50">10-18h</text><text x="500" y="100" class="muted">máquinas difíciles</text>
+<circle cx="680" cy="70" r="7" fill="#dc2626"/><text x="680" y="50">18-24h</text><text x="680" y="100" class="muted">repaso + capturas</text>
+</g></svg></figure>
+<div class="box tip"><strong>💡 La regla de los 2 enfados</strong>Si llevas más de ~1,5 h atascado en una máquina sin avanzar, cámbiate a otra. Vuelve con la mente fresca. Descansa, come, duerme algo: el cansancio hace que no veas lo evidente.</div>
+
+<h2>4. Checklist universal de ataque (imprímela)</h2>
+<div class="table-wrap"><table>
+<tr><th>Fase</th><th>Checklist</th></tr>
+<tr><td>Escaneo</td><td>☐ nmap -p- &nbsp; ☐ nmap -sC -sV de puertos abiertos &nbsp; ☐ UDP en máquinas difíciles</td></tr>
+<tr><td>Web</td><td>☐ whatweb/nikto &nbsp; ☐ gobuster dir &nbsp; ☐ robots.txt/código fuente &nbsp; ☐ versión del CMS → exploit &nbsp; ☐ SQLi/LFI/upload/cmd injection</td></tr>
+<tr><td>Servicios</td><td>☐ FTP anónimo &nbsp; ☐ SMB null session/shares &nbsp; ☐ credenciales por defecto &nbsp; ☐ searchsploit de cada versión</td></tr>
+<tr><td>Acceso</td><td>☐ reverse shell &nbsp; ☐ estabilizar TTY &nbsp; ☐ leer user/local.txt</td></tr>
+<tr><td>Privesc Linux</td><td>☐ sudo -l &nbsp; ☐ SUID + GTFOBins &nbsp; ☐ cron + pspy &nbsp; ☐ capabilities &nbsp; ☐ grupos &nbsp; ☐ credenciales &nbsp; ☐ kernel</td></tr>
+<tr><td>Privesc Windows</td><td>☐ whoami /priv &nbsp; ☐ winPEAS &nbsp; ☐ servicios &nbsp; ☐ credenciales/registro &nbsp; ☐ AlwaysInstallElevated</td></tr>
+<tr><td>Post</td><td>☐ ip a/ipconfig (¿más redes?) &nbsp; ☐ credenciales para reutilizar &nbsp; ☐ pivoting &nbsp; ☐ proof.txt + captura</td></tr>
+</table></div>
+
+<h2>5. Errores típicos que suspenden</h2>
+<div class="box danger"><strong>🚫 Evita</strong>
+• No escanear los 65535 puertos (te pierdes el servicio clave).<br>
+• Olvidar UDP.<br>
+• Fijarte en una máquina y no cambiar al atascarte (efecto túnel).<br>
+• No tomar capturas durante el ataque (y la máquina se reinicia).<br>
+• No reutilizar credenciales entre máquinas.<br>
+• Empezar el reporte demasiado tarde y sin pruebas.<br>
+• No descansar: a las 15 h sin dormir no piensas bien.</div>
+
+<h2>6. Antes del examen: tu kit</h2>
+<ul>
+<li>Plantilla de reporte ya con tu nombre/OSID (módulo 15).</li>
+<li>Carpeta de notas organizada por máquina.</li>
+<li>Chuleta de comandos impresa o a mano (la de esta web, módulo chuleta).</li>
+<li>Binarios listos: linpeas, winPEAS, chisel, ligolo, mimikatz, pspy, SharpHound.</li>
+<li>Diccionarios: rockyou, SecLists.</li>
+<li>Snapshots de tu Kali funcionando.</li>
+</ul>
+
+<h2>📝 Evaluación del tema</h2>
+<script type="application/json" data-quiz="Cuestionario 16 · Estrategia">
+[
+{"q":"En el eJPTv2, ¿puedes usar Metasploit?","o":["No, está prohibido","Sí, sin restricción","Solo en una máquina","Solo con permiso"],"a":1,"e":"En eJPTv2 Metasploit está permitido libremente. En OSCP, solo en una máquina."},
+{"q":"¿Qué haces si llevas 2 horas atascado en una máquina?","o":["Seguir hasta lograrlo","Cambiar a otra máquina y volver después","Rendirte","Reiniciar todo"],"a":1,"e":"Evita el efecto túnel: cambia y vuelve con la mente fresca."},
+{"q":"¿Cuándo debes tomar las capturas en el OSCP?","o":["Al final","Durante la explotación de cada máquina","Nunca","Solo del reporte"],"a":1,"e":"Durante, por si la máquina se reinicia y pierdes la prueba."},
+{"q":"¿Qué es lo PRIMERO que haces al empezar el examen?","o":["Explotar la primera IP","Escaneo completo de toda la red","Escribir el reporte","Reiniciar"],"a":1,"e":"Mapear todo antes de atacar nada."},
+{"q":"En el OSCP, ¿el reporte es opcional?","o":["Sí","No, es obligatorio para aprobar","Solo si fallas","Da puntos extra"],"a":1,"e":"Sin reporte válido no se aprueba."},
+{"q":"¿Por qué pruebas credenciales encontradas en todas las máquinas?","o":["Por aburrimiento","Porque la reutilización de contraseñas es muy común","Para el reporte","No se hace"],"a":1,"e":"La reutilización de credenciales abre muchas puertas."}
+]
+</script>
+<div class="lab"><h4>🧪 Práctica final</h4><p>Haz una máquina completa cronometrándote y tomando capturas como si fuera el examen. Luego ve al <a href="../examen-final.html">Simulacro final</a> y al <a href="../laboratorios.html">listado de laboratorios</a> para seguir practicando.</p></div>
+
+</main>
+<nav class="toc"></nav>
+</div>
+<script src="../assets/app.js"></script>
+</body>
+</html>

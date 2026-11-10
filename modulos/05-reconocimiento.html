@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es" data-root="../">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>05 · Reconocimiento pasivo · Academia eJPTv2</title>
+<meta name="description" content="OSINT, whois, DNS, subdominios, Google dorks, theHarvester y footprinting sin tocar el objetivo.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar"></aside>
+<main>
+<span class="badge ejpt">Nivel 1 · eJPTv2</span>
+<h1>05 · Reconocimiento (OSINT / footprinting)</h1>
+<p class="lead">Recoger información <b>antes</b> de atacar. El reconocimiento <b>pasivo</b> no toca el objetivo (usas fuentes públicas); el <b>activo</b> sí lo toca (eso es el módulo 06).</p>
+
+<figure>
+<svg viewBox="0 0 760 170" role="img" aria-label="Pasivo vs activo">
+<rect x="20" y="20" width="340" height="130" rx="12" fill="#0f9d6e22" stroke="#0f9d6e"/>
+<text x="190" y="50" text-anchor="middle" font-weight="800">🕵️ Pasivo</text><text x="190" y="78" text-anchor="middle" font-size="13">NO tocas el objetivo</text><text x="190" y="100" text-anchor="middle" font-size="12" class="muted">Google, whois, redes sociales</text><text x="190" y="122" text-anchor="middle" font-size="12" class="muted">Indetectable</text>
+<rect x="400" y="20" width="340" height="130" rx="12" fill="#dc262622" stroke="#dc2626"/>
+<text x="570" y="50" text-anchor="middle" font-weight="800">📡 Activo</text><text x="570" y="78" text-anchor="middle" font-size="13">SÍ tocas el objetivo</text><text x="570" y="100" text-anchor="middle" font-size="12" class="muted">nmap, nikto, peticiones</text><text x="570" y="122" text-anchor="middle" font-size="12" class="muted">Queda registrado en sus logs</text>
+</svg></figure>
+
+<h2>1. ¿Qué buscamos?</h2>
+<ul>
+<li><b>Dominios y subdominios</b> (mail.empresa.com, vpn.empresa.com…).</li>
+<li><b>Rangos de IP</b> que les pertenecen.</li>
+<li><b>Correos y nombres de empleados</b> (para adivinar usuarios y phishing).</li>
+<li><b>Tecnologías</b> que usan (servidor web, CMS, versiones).</li>
+<li><b>Credenciales filtradas</b> en brechas antiguas.</li>
+</ul>
+
+<h2>2. WHOIS y DNS</h2>
+<pre><span class="p">$</span> whois empresa.com          <span class="c"># dueño del dominio, fechas, servidores DNS</span>
+<span class="p">$</span> nslookup empresa.com       <span class="c"># IP del dominio</span>
+<span class="p">$</span> dig empresa.com ANY         <span class="c"># todos los registros</span>
+<span class="p">$</span> dig MX empresa.com          <span class="c"># servidores de correo</span>
+<span class="p">$</span> dig NS empresa.com          <span class="c"># servidores DNS</span>
+<span class="p">$</span> host -t txt empresa.com     <span class="c"># registros TXT (SPF revela proveedores)</span></pre>
+
+<h3>Transferencia de zona (un clásico del eJPT)</h3>
+<div class="box def"><strong>📘 ¿Qué es?</strong>Si un servidor DNS está mal configurado, te entrega <b>toda la lista de subdominios</b> de golpe. Es oro.</div>
+<pre><span class="p">$</span> dig AXFR empresa.com @ns1.empresa.com
+<span class="c"># Si funciona, verás TODOS los registros: dev.empresa.com, internal.empresa.com...</span></pre>
+
+<h2>3. Enumerar subdominios</h2>
+<pre><span class="p">$</span> sublist3r -d empresa.com
+<span class="p">$</span> gobuster dns -d empresa.com -w /usr/share/wordlists/amass/subdomains-top1mil-5000.txt
+<span class="p">$</span> dnsrecon -d empresa.com
+<span class="c"># Fuentes web pasivas: crt.sh (certificados), VirusTotal, Shodan</span>
+<span class="p">$</span> curl -s "https://crt.sh/?q=%25.empresa.com&output=json" | jq -r '.[].name_value' | sort -u</pre>
+
+<h2>4. Correos y empleados</h2>
+<pre><span class="p">$</span> theHarvester -d empresa.com -b all     <span class="c"># correos, subdominios, hosts</span></pre>
+<div class="box tip"><strong>💡 De correo a usuario</strong>Si los correos son <code>nombre.apellido@empresa.com</code>, probablemente el usuario de Windows sea <code>nombre.apellido</code> o <code>napellido</code>. Esto alimenta la fuerza bruta y el password spraying (módulo 10).</div>
+
+<h2>5. Google Dorks (hacking con buscadores)</h2>
+<div class="table-wrap"><table>
+<tr><th>Dork</th><th>Encuentra</th></tr>
+<tr><td><code>site:empresa.com</code></td><td>Todo lo indexado del dominio</td></tr>
+<tr><td><code>site:empresa.com filetype:pdf</code></td><td>Documentos (metadatos con nombres de usuario)</td></tr>
+<tr><td><code>site:empresa.com inurl:admin</code></td><td>Paneles de administración</td></tr>
+<tr><td><code>intitle:"index of" site:empresa.com</code></td><td>Directorios abiertos</td></tr>
+<tr><td><code>"password" filetype:log</code></td><td>Logs con contraseñas</td></tr>
+</table></div>
+<div class="box tip"><strong>💡 Más recursos pasivos</strong><b>Shodan</b> (buscador de dispositivos conectados), <b>Wayback Machine</b> (versiones antiguas de webs), <b>haveibeenpwned</b> (brechas), <b>Wappalyzer</b> (tecnologías de una web), <b>exiftool</b> (metadatos de documentos descargados).</div>
+
+<h2>6. Fingerprinting de la web (en el límite pasivo/activo)</h2>
+<pre><span class="p">$</span> whatweb http://10.0.2.4         <span class="c"># tecnologías y versiones</span>
+<span class="p">$</span> curl -I http://10.0.2.4         <span class="c"># cabeceras (Server, X-Powered-By)</span></pre>
+
+<div class="box oscp"><strong>🔴 Nivel OSCP</strong>En el examen OSCP el reconocimiento externo es limitado (te dan las IPs), pero el principio es el mismo <b>dentro</b> de la red: cada máquina comprometida es una nueva fase de recon. Documenta hostnames, dominios internos y usuarios que vayas descubriendo.</div>
+
+<h2>📝 Evaluación del tema</h2>
+<script type="application/json" data-quiz="Cuestionario 05 · Reconocimiento">
+[
+{"q":"¿Cuál es reconocimiento PASIVO?","o":["nmap -sV al objetivo","Buscar la empresa en Google y crt.sh","nikto contra la web","Fuerza bruta SSH"],"a":1,"e":"Pasivo = fuentes públicas sin tocar el objetivo."},
+{"q":"¿Qué comando intenta una transferencia de zona DNS?","o":["dig AXFR empresa.com @ns1.empresa.com","nmap -p53","whois empresa.com","ping empresa.com"],"a":0,"e":"AXFR; si está mal configurado, entrega todos los subdominios."},
+{"q":"¿Qué herramienta recolecta correos y subdominios de fuentes públicas?","o":["Nmap","theHarvester","Hydra","John"],"a":1,"e":"theHarvester."},
+{"q":"El registro DNS MX indica…","o":["La IP del web","Los servidores de correo","El dueño","Los subdominios"],"a":1,"e":"MX = servidores de correo."},
+{"q":"crt.sh sirve para…","o":["Crackear hashes","Encontrar subdominios vía certificados TLS","Escanear puertos","Enviar phishing"],"a":1,"e":"Los certificados listan dominios y subdominios."},
+{"q":"¿Por qué interesan los correos nombre.apellido@empresa.com?","o":["Para spam","Porque sugieren el formato de usuario para fuerza bruta","No sirven","Para WHOIS"],"a":1,"e":"Ayudan a construir listas de usuarios válidos."}
+]
+</script>
+<h3>✍️ Ejercicios</h3>
+<ol><li>Usa <code>whois</code> sobre un dominio y anota sus servidores DNS.</li><li>Intenta una transferencia de zona contra <code>zonetransfer.me</code> (dominio público hecho para practicar).</li></ol>
+<details class="sol"><summary>Ver solución</summary><div><pre>whois zonetransfer.me
+dig AXFR zonetransfer.me @nsztm1.digi.ninja
+<span class="c"># zonetransfer.me permite AXFR a propósito: verás decenas de registros</span></pre></div></details>
+
+</main>
+<nav class="toc"></nav>
+</div>
+<script src="../assets/app.js"></script>
+</body>
+</html>

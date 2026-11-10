@@ -1,0 +1,215 @@
+01 · Redes|IPs, máscaras, subnetting, puertos, TCP/UDP, modelo OSI, ARP, DNS y HTTP explicados con diagramas y calculadora.
+<span class="badge base">Nivel 0</span><span class="badge ejpt">Muy preguntado en eJPTv2</span>
+<h1>01 · Redes para pentesters</h1>
+<p class="lead">Si no entiendes redes, no entiendes el hacking. Aquí aprenderás cómo viaja la información, qué es una IP, qué es un puerto y cómo calcular subredes (el eJPTv2 te pide identificar redes y hosts).</p>
+
+<h2>1. Dirección IP</h2>
+<div class="box def"><strong>📘 Definición</strong>Una <b>dirección IP</b> (IPv4) identifica un equipo en una red. Son 4 números de 0 a 255 separados por puntos: <code>192.168.1.10</code>. Son 32 bits.</div>
+<div class="box analogy"><strong>🧠 Analogía: el edificio</strong>La IP es la dirección postal. La <b>red</b> es la calle (<code>192.168.1</code>) y el <b>host</b> es el número de portal (<code>.10</code>). El <b>puerto</b> es el piso/puerta dentro del edificio.</div>
+<div class="table-wrap"><table>
+<tr><th>Rango privado (RFC 1918)</th><th>Dónde lo verás</th></tr>
+<tr><td><code>10.0.0.0/8</code></td><td>Empresas grandes, laboratorios (HTB usa 10.10.x.x)</td></tr>
+<tr><td><code>172.16.0.0/12</code> (172.16–172.31)</td><td>Empresas, Docker</td></tr>
+<tr><td><code>192.168.0.0/16</code></td><td>Casas, oficinas pequeñas, laboratorio eJPT</td></tr>
+<tr><td><code>127.0.0.1</code></td><td><b>localhost</b>: el propio equipo</td></tr>
+</table></div>
+<p>Las IPs privadas no salen a Internet directamente: el <b>router</b> hace <b>NAT</b> y las traduce a una IP pública.</p>
+
+<h2>2. Máscara de red y CIDR</h2>
+<div class="box def"><strong>📘 Definición</strong>La <b>máscara</b> dice qué parte de la IP es la red y cuál el host. En notación <b>CIDR</b> se escribe <code>/24</code> = los primeros 24 bits son red.</div>
+<figure>
+<svg viewBox="0 0 820 170" role="img" aria-label="IP 192.168.1.10/24 dividida en red y host">
+<g font-family="JetBrains Mono,monospace" font-size="20">
+<rect x="20" y="30" width="570" height="50" rx="8" fill="#2563eb22" stroke="#2563eb"/>
+<rect x="595" y="30" width="200" height="50" rx="8" fill="#0f9d6e22" stroke="#0f9d6e"/>
+<text x="305" y="63" text-anchor="middle">192 . 168 . 1 .</text><text x="695" y="63" text-anchor="middle">10</text></g>
+<text x="305" y="110" text-anchor="middle" font-weight="800" fill="#2563eb">RED (24 bits = /24)</text>
+<text x="695" y="110" text-anchor="middle" font-weight="800" fill="#0f9d6e">HOST (8 bits)</text>
+<text x="410" y="150" text-anchor="middle" font-size="14" class="muted">Máscara 255.255.255.0 → 2⁸ = 256 direcciones, 254 usables (.1 a .254)</text>
+</svg></figure>
+<div class="table-wrap"><table>
+<tr><th>CIDR</th><th>Máscara</th><th>Direcciones</th><th>Hosts usables</th></tr>
+<tr><td>/8</td><td>255.0.0.0</td><td>16.777.216</td><td>16.777.214</td></tr>
+<tr><td>/16</td><td>255.255.0.0</td><td>65.536</td><td>65.534</td></tr>
+<tr><td>/24</td><td>255.255.255.0</td><td>256</td><td>254</td></tr>
+<tr><td>/25</td><td>255.255.255.128</td><td>128</td><td>126</td></tr>
+<tr><td>/26</td><td>255.255.255.192</td><td>64</td><td>62</td></tr>
+<tr><td>/27</td><td>255.255.255.224</td><td>32</td><td>30</td></tr>
+<tr><td>/28</td><td>255.255.255.240</td><td>16</td><td>14</td></tr>
+<tr><td>/30</td><td>255.255.255.252</td><td>4</td><td>2</td></tr>
+<tr><td>/32</td><td>255.255.255.255</td><td>1</td><td>1 (un solo equipo)</td></tr>
+</table></div>
+<div class="box tip"><strong>💡 Truco rápido</strong>Hosts usables = 2<sup>(32 − CIDR)</sup> − 2. Se restan 2 porque la primera dirección es la <b>de red</b> y la última la de <b>broadcast</b> (mensaje para todos).</div>
+<div class="box example"><strong>✍️ Ejemplo: 192.168.10.77/26</strong>
+<ol><li>/26 → quedan 6 bits de host → bloques de 2⁶ = <b>64</b>.</li>
+<li>Los bloques en el último octeto son: 0, 64, 128, 192. 77 cae en el bloque <b>64–127</b>.</li>
+<li>Red: <code>192.168.10.64</code> · Broadcast: <code>192.168.10.127</code> · Hosts: <code>.65</code> a <code>.126</code> (62 hosts).</li></ol></div>
+
+<h3>🧮 Calculadora de subredes (práctica interactiva)</h3>
+<div class="quiz">
+<label>IP/CIDR: <input id="cidrIn" value="10.10.5.130/27" class="search" style="max-width:280px;display:inline-block;margin:0 8px"></label>
+<button class="btn" onclick="calcCidr()">Calcular</button>
+<pre id="cidrOut" style="margin-top:12px"></pre>
+</div>
+<script>
+function calcCidr(){
+  const v=document.getElementById('cidrIn').value.trim(); const o=document.getElementById('cidrOut');
+  const m=v.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)\/(\d+)$/); if(!m){o.textContent='Formato: a.b.c.d/nn';return}
+  const ip=m.slice(1,5).map(Number), p=+m[5]; if(ip.some(x=>x>255)||p>32){o.textContent='Valores fuera de rango';return}
+  const n=((ip[0]<<24)>>>0)+(ip[1]<<16)+(ip[2]<<8)+ip[3];
+  const mask=p===0?0:(0xFFFFFFFF<<(32-p))>>>0; const net=(n&mask)>>>0, bc=(net|(~mask>>>0))>>>0;
+  const s=x=>[x>>>24,(x>>>16)&255,(x>>>8)&255,x&255].join('.');
+  const bin=x=>[x>>>24,(x>>>16)&255,(x>>>8)&255,x&255].map(b=>b.toString(2).padStart(8,'0')).join('.');
+  const total=2**(32-p), usable=p>=31?total:total-2;
+  o.textContent=`IP:         ${s(n)}\nBinario:    ${bin(n)}\nMáscara:    ${s(mask)}  (${bin(mask)})\nRed:        ${s(net)}/${p}\nBroadcast:  ${s(bc)}\nPrimer host:${p>=31?s(net):s(net+1)}\nÚltimo host:${p>=31?s(bc):s(bc-1)}\nHosts:      ${usable}`;
+}
+calcCidr();
+</script>
+
+<h2>3. Puertos</h2>
+<div class="box def"><strong>📘 Definición</strong>Un <b>puerto</b> (0–65535) identifica a qué servicio va dirigido un mensaje dentro de un equipo. IP + puerto = <b>socket</b> (ej. <code>10.0.0.5:80</code>).</div>
+<div class="table-wrap"><table>
+<tr><th>Puerto</th><th>Servicio</th><th>Qué es</th><th>Por qué importa</th></tr>
+<tr><td>21</td><td>FTP</td><td>Transferir ficheros</td><td>Login anónimo, credenciales en claro</td></tr>
+<tr><td>22</td><td>SSH</td><td>Terminal remota cifrada</td><td>Fuerza bruta, claves privadas robadas</td></tr>
+<tr><td>23</td><td>Telnet</td><td>Terminal remota sin cifrar</td><td>Todo viaja en claro</td></tr>
+<tr><td>25</td><td>SMTP</td><td>Enviar correo</td><td>Enumerar usuarios (VRFY)</td></tr>
+<tr><td>53</td><td>DNS</td><td>Nombres → IPs</td><td>Transferencia de zona</td></tr>
+<tr><td>80 / 443</td><td>HTTP / HTTPS</td><td>Web</td><td>La mayor superficie de ataque</td></tr>
+<tr><td>110 / 143</td><td>POP3 / IMAP</td><td>Leer correo</td><td>Credenciales</td></tr>
+<tr><td>135 / 139 / 445</td><td>RPC / NetBIOS / SMB</td><td>Compartir ficheros Windows</td><td>EternalBlue, recursos compartidos</td></tr>
+<tr><td>161 (UDP)</td><td>SNMP</td><td>Gestión de red</td><td>Comunidad “public” filtra información</td></tr>
+<tr><td>389 / 636</td><td>LDAP</td><td>Directorio (Active Directory)</td><td>Enumerar usuarios del dominio</td></tr>
+<tr><td>88</td><td>Kerberos</td><td>Autenticación AD</td><td>Kerberoasting, AS-REP roast</td></tr>
+<tr><td>1433 / 3306 / 5432</td><td>MSSQL / MySQL / PostgreSQL</td><td>Bases de datos</td><td>Credenciales por defecto</td></tr>
+<tr><td>3389</td><td>RDP</td><td>Escritorio remoto Windows</td><td>Acceso gráfico</td></tr>
+<tr><td>5985 / 5986</td><td>WinRM</td><td>PowerShell remoto</td><td>evil-winrm con credenciales</td></tr>
+<tr><td>8080 / 8443</td><td>HTTP alternativo</td><td>Tomcat, Jenkins, paneles</td><td>Paneles de admin</td></tr>
+</table></div>
+<div class="box tip"><strong>💡 Memoriza</strong>21, 22, 23, 25, 53, 80, 88, 110, 139, 143, 161, 389, 443, 445, 3306, 3389, 5985. Salen constantemente.</div>
+
+<h2>4. TCP vs UDP y el “three-way handshake”</h2>
+<figure>
+<svg viewBox="0 0 760 300" role="img" aria-label="Three way handshake: SYN, SYN-ACK, ACK">
+<defs><marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="#888"/></marker></defs>
+<text x="130" y="30" text-anchor="middle" font-weight="800">💻 Cliente</text><text x="630" y="30" text-anchor="middle" font-weight="800">🖥️ Servidor :80</text>
+<line x1="130" y1="40" x2="130" y2="290" stroke="#888" stroke-dasharray="4 4"/><line x1="630" y1="40" x2="630" y2="290" stroke="#888" stroke-dasharray="4 4"/>
+<line x1="130" y1="80" x2="625" y2="120" stroke="#0f9d6e" stroke-width="3" marker-end="url(#a1)"/><text x="380" y="88" text-anchor="middle" font-weight="700" fill="#0f9d6e">1. SYN  (“¿hablamos?”)</text>
+<line x1="630" y1="150" x2="135" y2="190" stroke="#2563eb" stroke-width="3" marker-end="url(#a1)"/><text x="380" y="158" text-anchor="middle" font-weight="700" fill="#2563eb">2. SYN-ACK  (“¡sí, hablemos!”)</text>
+<line x1="130" y1="220" x2="625" y2="260" stroke="#0f9d6e" stroke-width="3" marker-end="url(#a1)"/><text x="380" y="228" text-anchor="middle" font-weight="700" fill="#0f9d6e">3. ACK  (“perfecto”)</text>
+<text x="380" y="292" text-anchor="middle" font-size="13" class="muted">Si el puerto está cerrado, el servidor responde RST en el paso 2.</text>
+</svg></figure>
+<div class="table-wrap"><table>
+<tr><th></th><th>TCP</th><th>UDP</th></tr>
+<tr><td>Conexión</td><td>Sí (handshake)</td><td>No, envía y ya</td></tr>
+<tr><td>Fiable</td><td>Sí, confirma y reenvía</td><td>No garantiza entrega</td></tr>
+<tr><td>Analogía</td><td>Llamada telefónica</td><td>Enviar una postal</td></tr>
+<tr><td>Ejemplos</td><td>HTTP, SSH, SMB, FTP</td><td>DNS, SNMP, DHCP, TFTP</td></tr>
+<tr><td>Escaneo Nmap</td><td><code>-sS</code> / <code>-sT</code></td><td><code>-sU</code> (lento)</td></tr>
+</table></div>
+<div class="box tip"><strong>💡 Esto explica Nmap</strong>El escaneo <code>-sS</code> (“SYN scan”) envía el SYN, si recibe SYN-ACK sabe que el puerto está <b>abierto</b> y corta con RST sin completar la conexión. Por eso se le llama “half-open” (medio abierto).</div>
+
+<h2>5. Modelo OSI y TCP/IP</h2>
+<figure>
+<svg viewBox="0 0 760 400" role="img" aria-label="Capas OSI">
+<g font-size="14">
+<rect x="20" y="10" width="440" height="48" rx="8" fill="#a855f722" stroke="#a855f7"/><text x="40" y="40" font-weight="800">7 Aplicación</text><text x="200" y="40" class="muted">HTTP, FTP, DNS, SMB, SSH</text>
+<rect x="20" y="62" width="440" height="48" rx="8" fill="#a855f716" stroke="#a855f7"/><text x="40" y="92" font-weight="800">6 Presentación</text><text x="200" y="92" class="muted">cifrado TLS, codificación</text>
+<rect x="20" y="114" width="440" height="48" rx="8" fill="#a855f70d" stroke="#a855f7"/><text x="40" y="144" font-weight="800">5 Sesión</text><text x="200" y="144" class="muted">mantener la conversación</text>
+<rect x="20" y="166" width="440" height="48" rx="8" fill="#2563eb22" stroke="#2563eb"/><text x="40" y="196" font-weight="800">4 Transporte</text><text x="200" y="196" class="muted">TCP / UDP · puertos</text>
+<rect x="20" y="218" width="440" height="48" rx="8" fill="#0f9d6e22" stroke="#0f9d6e"/><text x="40" y="248" font-weight="800">3 Red</text><text x="200" y="248" class="muted">IP · routers · ICMP (ping)</text>
+<rect x="20" y="270" width="440" height="48" rx="8" fill="#d9770622" stroke="#d97706"/><text x="40" y="300" font-weight="800">2 Enlace</text><text x="200" y="300" class="muted">MAC · switches · ARP</text>
+<rect x="20" y="322" width="440" height="48" rx="8" fill="#dc262622" stroke="#dc2626"/><text x="40" y="352" font-weight="800">1 Física</text><text x="200" y="352" class="muted">cables, wifi, señales</text>
+<rect x="490" y="10" width="250" height="152" rx="8" class="bx"/><text x="615" y="90" text-anchor="middle" font-weight="800">Aplicación (TCP/IP)</text>
+<rect x="490" y="166" width="250" height="48" rx="8" class="bx"/><text x="615" y="196" text-anchor="middle" font-weight="800">Transporte</text>
+<rect x="490" y="218" width="250" height="48" rx="8" class="bx"/><text x="615" y="248" text-anchor="middle" font-weight="800">Internet</text>
+<rect x="490" y="270" width="250" height="100" rx="8" class="bx"/><text x="615" y="325" text-anchor="middle" font-weight="800">Acceso a red</text>
+</g></svg>
+<figcaption>Izquierda: modelo OSI (7 capas, teórico). Derecha: modelo TCP/IP (4 capas, el que se usa realmente).</figcaption></figure>
+<div class="box tip"><strong>💡 Regla mnemotécnica (de abajo a arriba)</strong>“<b>F</b>ue <b>E</b>l <b>R</b>atón <b>T</b>odo <b>S</b>u <b>P</b>an <b>A</b>yer” → Física, Enlace, Red, Transporte, Sesión, Presentación, Aplicación.</div>
+<div class="box analogy"><strong>🧠 Analogía: enviar un paquete por mensajería</strong>Escribes una carta (aplicación), la metes en un sobre con número de departamento (puerto, transporte), le pones la dirección de la ciudad (IP, red), el repartidor de tu barrio la lleva al siguiente punto usando la matrícula del camión (MAC, enlace) por la carretera (física). Cada capa añade su “sobre” = <b>encapsulación</b>.</div>
+
+<h2>6. MAC, ARP, gateway y DNS</h2>
+<ul>
+<li><b>MAC</b>: dirección física de la tarjeta de red (<code>08:00:27:3a:1b:9c</code>). Funciona solo dentro de la red local.</li>
+<li><b>ARP</b>: pregunta “¿quién tiene la IP 192.168.1.1? que me diga su MAC”. Herramienta: <code>arp-scan -l</code> o <code>netdiscover</code> para descubrir equipos en tu red.</li>
+<li><b>Gateway (puerta de enlace)</b>: el router por el que sales a otras redes. Clave en <b>pivoting</b>.</li>
+<li><b>DNS</b>: traduce nombres a IPs (<code>google.com → 142.250.x.x</code>). Registros: <b>A</b> (IPv4), <b>AAAA</b> (IPv6), <b>MX</b> (correo), <b>NS</b> (servidor DNS), <b>CNAME</b> (alias), <b>TXT</b> (texto), <b>PTR</b> (IP→nombre).</li>
+<li><b>DHCP</b>: reparte IPs automáticamente.</li>
+<li><b>ICMP</b>: mensajes de control; <code>ping</code> lo usa. Muchos firewalls lo bloquean (por eso en Nmap a veces usamos <code>-Pn</code>).</li>
+</ul>
+<div class="box tip"><strong>💡 Truco TTL para adivinar el SO</strong>Haz <code>ping</code> y mira el <b>TTL</b>: ≈64 → Linux, ≈128 → Windows, ≈255 → equipos de red (Cisco).</div>
+
+<h2>7. HTTP en 2 minutos</h2>
+<pre><span class="c"># Petición (lo que envía el navegador)</span>
+GET /login.php?user=ana HTTP/1.1
+Host: 10.10.10.5
+User-Agent: Mozilla/5.0
+Cookie: PHPSESSID=abc123
+
+<span class="c"># Respuesta (lo que devuelve el servidor)</span>
+HTTP/1.1 200 OK
+Server: Apache/2.4.29 (Ubuntu)      <span class="c">← ¡versión! útil para buscar exploits</span>
+Set-Cookie: PHPSESSID=abc123
+Content-Type: text/html</pre>
+<div class="table-wrap"><table>
+<tr><th>Método</th><th>Uso</th></tr><tr><td>GET</td><td>Pedir algo (parámetros en la URL)</td></tr><tr><td>POST</td><td>Enviar datos (formularios, en el cuerpo)</td></tr><tr><td>PUT / DELETE</td><td>Subir / borrar (peligroso si está habilitado)</td></tr></table></div>
+<div class="table-wrap"><table>
+<tr><th>Código</th><th>Significado</th></tr>
+<tr><td>200</td><td>OK</td></tr><tr><td>301/302</td><td>Redirección</td></tr><tr><td>401</td><td>Requiere autenticación</td></tr><tr><td>403</td><td>Prohibido (¡existe pero no te deja!)</td></tr><tr><td>404</td><td>No existe</td></tr><tr><td>500</td><td>Error del servidor (¿has roto algo con tu inyección?)</td></tr></table></div>
+
+<h2>8. Comandos de red esenciales</h2>
+<pre><span class="p">$</span> ip a                     <span class="c"># mis interfaces e IPs (Linux)</span>
+<span class="p">$</span> ip route                 <span class="c"># tabla de rutas y gateway</span>
+<span class="p">$</span> ping -c 3 10.0.2.4       <span class="c"># ¿está vivo?</span>
+<span class="p">$</span> sudo arp-scan -l         <span class="c"># equipos en mi red local</span>
+<span class="p">$</span> ss -tulnp                <span class="c"># puertos abiertos en MI máquina</span>
+<span class="p">$</span> nslookup dominio.com     <span class="c"># resolver DNS</span>
+<span class="p">$</span> dig A dominio.com        <span class="c"># DNS más detallado</span>
+<span class="p">$</span> traceroute 8.8.8.8       <span class="c"># por qué routers paso</span>
+<span class="p">$</span> curl -I http://10.0.2.4  <span class="c"># cabeceras HTTP</span>
+<span class="c">REM Windows</span>
+<span class="p">&gt;</span> ipconfig /all  ·  route print  ·  netstat -ano  ·  arp -a</pre>
+
+<div class="box oscp"><strong>🔴 Nivel OSCP</strong>En redes internas con varias interfaces (<code>ipconfig</code> muestra dos IPs), el equipo es un candidato a <b>pivote</b>. Anota siempre todas las interfaces y la tabla ARP de cada máquina comprometida: te revelan redes ocultas.</div>
+
+<h2>🎥 Vídeos</h2>
+<div class="vlinks">
+<a href="https://www.youtube.com/results?search_query=subnetting+explicado+facil+espa%C3%B1ol" target="_blank" rel="noopener">Subnetting fácil (ES)</a>
+<a href="https://www.youtube.com/results?search_query=modelo+osi+explicado" target="_blank" rel="noopener">Modelo OSI</a>
+<a href="https://www.youtube.com/results?search_query=networkchuck+you+suck+at+subnetting" target="_blank" rel="noopener">NetworkChuck – Subnetting (EN)</a>
+<a href="https://www.youtube.com/results?search_query=tcp+three+way+handshake+explained" target="_blank" rel="noopener">TCP handshake</a>
+</div>
+
+<h2>📝 Evaluación del tema</h2>
+<script type="application/json" data-quiz="Cuestionario 01 · Redes">
+[
+{"q":"¿Cuántos hosts usables tiene una red /24?","o":["256","255","254","24"],"a":2,"e":"2^8 − 2 = 254 (se restan red y broadcast)."},
+{"q":"¿Cuál es la dirección de red de 192.168.10.77/26?","o":["192.168.10.0","192.168.10.64","192.168.10.77","192.168.10.127"],"a":1,"e":"Bloques de 64: 0, 64, 128, 192. 77 cae en el bloque que empieza en 64."},
+{"q":"¿Qué puerto usa SMB?","o":["21","445","3389","25"],"a":1,"e":"SMB usa 445 (y 139 sobre NetBIOS)."},
+{"q":"En un escaneo SYN, si el puerto está abierto el servidor responde…","o":["RST","SYN-ACK","ACK","Nada"],"a":1,"e":"SYN-ACK = abierto; RST = cerrado; sin respuesta = filtrado."},
+{"q":"Haces ping y el TTL es 127. ¿Qué SO es probablemente?","o":["Linux","Windows","Cisco","macOS"],"a":1,"e":"Windows empieza en 128 y resta 1 por cada router (salto)."},
+{"q":"¿Qué protocolo traduce una IP a una dirección MAC en la red local?","o":["DNS","DHCP","ARP","ICMP"],"a":2,"e":"ARP: Address Resolution Protocol."},
+{"q":"¿Qué registro DNS indica el servidor de correo?","o":["A","MX","NS","PTR"],"a":1,"e":"MX = Mail eXchanger."},
+{"q":"¿Cuál de estas IPs es privada?","o":["8.8.8.8","172.20.4.1","172.40.1.1","11.0.0.1"],"a":1,"e":"172.16.0.0 – 172.31.255.255 es privado. 172.40 no."},
+{"q":"¿En qué capa OSI trabaja un router?","o":["2 Enlace","3 Red","4 Transporte","7 Aplicación"],"a":1,"e":"Los routers enrutan por IP (capa 3). Los switches por MAC (capa 2)."},
+{"q":"¿Qué código HTTP indica que un recurso existe pero el acceso está prohibido?","o":["200","301","403","404"],"a":2,"e":"403 Forbidden. Para un pentester es interesante: algo hay ahí."}
+]
+</script>
+<h3>✍️ Ejercicios de subnetting</h3>
+<ol>
+<li>Para <code>10.10.20.200/28</code>: red, broadcast, rango de hosts.</li>
+<li>¿Cuántos hosts caben en <code>172.16.0.0/22</code>?</li>
+<li>Tienes la IP <code>192.168.100.35</code> y máscara <code>255.255.255.224</code>. ¿Qué CIDR es y a qué red pertenece?</li>
+<li>Un equipo tiene las IPs <code>10.0.2.15/24</code> y <code>172.16.5.10/24</code>. ¿Qué significa para un pentester?</li>
+</ol>
+<details class="sol"><summary>Ver soluciones</summary><div>
+<p>1. /28 → bloques de 16 (…192, 208…). 200 está en 192–207. Red <code>10.10.20.192</code>, broadcast <code>10.10.20.207</code>, hosts <code>.193–.206</code> (14).</p>
+<p>2. 2^(32−22) − 2 = 1024 − 2 = <b>1022</b>.</p>
+<p>3. .224 = 11100000 → 3 bits + 24 = <b>/27</b>. Bloques de 32: 0, 32, 64… → red <code>192.168.100.32/27</code>.</p>
+<p>4. Está conectado a dos redes: es un candidato a <b>pivote</b> para llegar a la red 172.16.5.0/24 (módulo 13).</p>
+</div></details>
+<div class="lab"><h4>🧪 Práctica</h4>
+<ol><li>En Kali: <code>ip a</code> y anota tu IP y CIDR.</li><li><code>sudo arp-scan -l</code> para encontrar a Metasploitable.</li><li>Haz ping a Metasploitable y mira el TTL.</li><li>Abre Wireshark, filtra por <code>tcp.flags.syn==1</code> y ejecuta <code>curl http://IP</code>. Identifica los 3 paquetes del handshake.</li></ol>
+<details class="sol"><summary>Ver solución</summary><div><p>Verás tu IP (p. ej. 10.0.2.15/24), la víctima en la misma red (10.0.2.4) con TTL 64 (Linux). En Wireshark aparecen SYN (cliente→servidor), SYN-ACK (servidor→cliente) y ACK, seguidos de la petición HTTP GET.</p></div></details>
+</div>

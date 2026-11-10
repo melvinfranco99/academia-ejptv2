@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="es" data-root="../">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>06 · Escaneo con Nmap · Academia eJPTv2</title>
+<meta name="description" content="Descubrir hosts y puertos, tipos de escaneo, detección de versiones y SO, scripts NSE, tiempos y evasión.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar"></aside>
+<main>
+<span class="badge ejpt">Nivel 1 · eJPTv2</span><span class="badge oscp">Clave en OSCP</span>
+<h1>06 · Escaneo de puertos con Nmap</h1>
+<p class="lead">Nmap es LA herramienta del pentester. Con ella descubres qué equipos están vivos, qué puertos tienen abiertos, qué servicios corren y qué versión. Domínala.</p>
+
+<h2>1. Estados de un puerto</h2>
+<div class="table-wrap"><table>
+<tr><th>Estado</th><th>Significado</th><th>Respuesta TCP</th></tr>
+<tr><td><b>open</b></td><td>Hay un servicio escuchando ✅</td><td>SYN-ACK</td></tr>
+<tr><td><b>closed</b></td><td>Accesible pero sin servicio</td><td>RST</td></tr>
+<tr><td><b>filtered</b></td><td>Un firewall bloquea; no se sabe</td><td>Sin respuesta</td></tr>
+</table></div>
+
+<h2>2. Descubrir equipos vivos (host discovery)</h2>
+<pre><span class="p">$</span> nmap -sn 10.0.2.0/24       <span class="c"># "ping scan": qué IPs responden, sin escanear puertos</span>
+<span class="p">$</span> nmap -sn 10.0.2.0/24 -oN hosts.txt</pre>
+<div class="box tip"><strong>💡 Si el ping está bloqueado</strong>Añade <code>-Pn</code> para que Nmap NO haga ping y asuma que el host está vivo. Muy común en Windows (que suele ignorar el ping).</div>
+
+<h2>3. Los escaneos que debes memorizar</h2>
+<div class="table-wrap"><table>
+<tr><th>Comando</th><th>Qué hace</th></tr>
+<tr><td><code>nmap -sS IP</code></td><td>SYN scan (sigiloso, por defecto con sudo). Rápido.</td></tr>
+<tr><td><code>nmap -sT IP</code></td><td>TCP connect (completa el handshake; sin privilegios)</td></tr>
+<tr><td><code>nmap -sU IP</code></td><td>UDP scan (lento; no olvides DNS 53, SNMP 161)</td></tr>
+<tr><td><code>nmap -p- IP</code></td><td>Los 65535 puertos (¡no solo los 1000 por defecto!)</td></tr>
+<tr><td><code>nmap -p 80,443,445 IP</code></td><td>Puertos concretos</td></tr>
+<tr><td><code>nmap -F IP</code></td><td>Rápido (100 puertos más comunes)</td></tr>
+<tr><td><code>nmap -sV IP</code></td><td>Versiones de los servicios ⭐</td></tr>
+<tr><td><code>nmap -O IP</code></td><td>Sistema operativo</td></tr>
+<tr><td><code>nmap -sC IP</code></td><td>Scripts por defecto (NSE)</td></tr>
+<tr><td><code>nmap -A IP</code></td><td>Todo: -sV -O -sC + traceroute</td></tr>
+</table></div>
+
+<h2>4. El comando que usarás el 90 % de las veces</h2>
+<pre><span class="c"># Paso 1: escaneo completo de puertos, rápido</span>
+<span class="p">$</span> nmap -p- --min-rate 5000 -T4 10.0.2.4 -oN all-ports.txt
+<span class="c"># Paso 2: enumerar a fondo SOLO los puertos abiertos encontrados</span>
+<span class="p">$</span> nmap -p 21,22,80,445 -sC -sV -oN detallado.txt 10.0.2.4</pre>
+<div class="box tip"><strong>💡 Estrategia de 2 pasos</strong>Primero descubres TODOS los puertos rápido; luego dedicas tiempo a enumerar solo los abiertos. Así no esperas eternamente ni te pierdes puertos raros (como un SSH en el 2222).</div>
+
+<h2>5. Anatomía de una salida de Nmap</h2>
+<pre>PORT    STATE SERVICE VERSION
+21/tcp  open  ftp     vsftpd 2.3.4              <span class="c">← ¡versión con backdoor famoso!</span>
+22/tcp  open  ssh     OpenSSH 4.7p1
+80/tcp  open  http    Apache httpd 2.4.49       <span class="c">← buscar CVE de esta versión</span>
+445/tcp open  smb     Samba smbd 3.0.20</pre>
+<div class="box example"><strong>✍️ Qué haces con esto</strong>Cada línea es una pista: copias “vsftpd 2.3.4” a <code>searchsploit</code> (módulo 09) y buscas si tiene exploit conocido. La versión lo es todo.</div>
+
+<h2>6. Scripts NSE (Nmap Scripting Engine)</h2>
+<div class="box def"><strong>📘 ¿Qué son?</strong>Mini-programas que automatizan tareas: detectar vulnerabilidades, enumerar shares SMB, probar login anónimo FTP… Están en <code>/usr/share/nmap/scripts/</code>.</div>
+<pre><span class="p">$</span> nmap -sV --script=vuln 10.0.2.4           <span class="c"># busca vulnerabilidades conocidas</span>
+<span class="p">$</span> nmap -p445 --script=smb-enum-shares 10.0.2.4
+<span class="p">$</span> nmap -p445 --script=smb-vuln-ms17-010 10.0.2.5   <span class="c"># EternalBlue</span>
+<span class="p">$</span> nmap -p21 --script=ftp-anon 10.0.2.4      <span class="c"># login anónimo FTP</span>
+<span class="p">$</span> ls /usr/share/nmap/scripts/ | grep http   <span class="c"># ver scripts disponibles</span></pre>
+
+<h2>7. Tiempos, salida y evasión</h2>
+<div class="table-wrap"><table>
+<tr><th>Flag</th><th>Uso</th></tr>
+<tr><td><code>-T0</code> … <code>-T5</code></td><td>Velocidad: T0 muy lento/sigiloso, T4 rápido (habitual), T5 agresivo</td></tr>
+<tr><td><code>-oN f.txt</code></td><td>Guardar en texto normal</td></tr>
+<tr><td><code>-oA base</code></td><td>Guardar en los 3 formatos (normal, grepable, XML)</td></tr>
+<tr><td><code>-Pn</code></td><td>No hacer ping (host asumido vivo)</td></tr>
+<tr><td><code>-n</code></td><td>No resolver DNS (más rápido)</td></tr>
+<tr><td><code>-v</code> / <code>-vv</code></td><td>Más información en pantalla</td></tr>
+<tr><td><code>--open</code></td><td>Mostrar solo puertos abiertos</td></tr>
+</table></div>
+
+<div class="box oscp"><strong>🔴 Nivel OSCP</strong>En el examen no puedes escanear automáticamente todo con herramientas prohibidas. Nmap sí está permitido. Guarda SIEMPRE la salida con <code>-oA</code>: las capturas de los escaneos van en el reporte. Y recuerda escanear <b>UDP</b> en las máquinas difíciles: a veces el camino está en SNMP (161/udp) o TFTP (69/udp).</div>
+
+<h2>🎥 Vídeos</h2>
+<div class="vlinks">
+<a href="https://www.youtube.com/results?search_query=nmap+tutorial+espa%C3%B1ol+pentesting" target="_blank" rel="noopener">Nmap en español</a>
+<a href="https://www.youtube.com/results?search_query=nmap+full+tutorial+hackersploit" target="_blank" rel="noopener">Nmap completo (EN)</a>
+</div>
+
+<h2>📝 Evaluación del tema</h2>
+<script type="application/json" data-quiz="Cuestionario 06 · Nmap">
+[
+{"q":"¿Qué flag escanea los 65535 puertos?","o":["-F","-p-","-top","-sU"],"a":1,"e":"-p- escanea todos. Por defecto Nmap solo mira los 1000 más comunes."},
+{"q":"Un puerto aparece como 'filtered'. ¿Qué significa?","o":["Hay servicio","Está cerrado","Un firewall bloquea y no se sabe","Es UDP"],"a":2,"e":"Filtered = sin respuesta, probablemente firewall."},
+{"q":"¿Qué flag detecta la versión de los servicios?","o":["-O","-sV","-sn","-Pn"],"a":1,"e":"-sV. Es la información más valiosa para buscar exploits."},
+{"q":"El objetivo es Windows y no responde al ping. ¿Qué añades?","o":["-sU","-Pn","-F","-T0"],"a":1,"e":"-Pn para que Nmap no descarte el host por no responder al ping."},
+{"q":"¿Qué hace nmap -sn 10.0.2.0/24?","o":["Escanea todos los puertos","Descubre qué hosts están vivos sin escanear puertos","Detecta el SO","Lanza scripts vuln"],"a":1,"e":"-sn = ping scan / host discovery."},
+{"q":"¿Qué script NSE comprueba EternalBlue?","o":["ftp-anon","smb-vuln-ms17-010","http-title","ssh-brute"],"a":1,"e":"smb-vuln-ms17-010 (MS17-010 = EternalBlue)."},
+{"q":"¿Qué hace -A?","o":["Escaneo UDP","Combina -sV, -O, -sC y traceroute","Solo ping","Modo sigiloso"],"a":1,"e":"-A = escaneo agresivo con todo."},
+{"q":"¿Qué protocolo suele olvidarse y esconde servicios como SNMP?","o":["TCP","UDP","ICMP","ARP"],"a":1,"e":"UDP (-sU). SNMP 161, DNS 53, TFTP 69."}
+]
+</script>
+<h3>✍️ Ejercicios</h3>
+<ol><li>Escribe el comando para escaneo completo de puertos rápido de 10.0.2.4 guardando la salida.</li><li>Tras ver abiertos 22, 80 y 445, escribe el comando de enumeración detallada.</li></ol>
+<details class="sol"><summary>Ver soluciones</summary><div><pre>nmap -p- --min-rate 5000 -T4 10.0.2.4 -oN all.txt
+nmap -p22,80,445 -sC -sV -oN det.txt 10.0.2.4</pre></div></details>
+<div class="lab"><h4>🧪 Práctica</h4><p>Escanea Metasploitable 2 con <code>nmap -sC -sV -p- 10.0.2.4</code>. Deberías ver más de 20 puertos. Haz una tabla en tus notas: puerto → servicio → versión → “¿qué investigo aquí?”. La usarás en el módulo 07.</p></div>
+
+</main>
+<nav class="toc"></nav>
+</div>
+<script src="../assets/app.js"></script>
+</body>
+</html>

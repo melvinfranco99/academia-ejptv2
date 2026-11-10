@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="es" data-root="../">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>03 · Windows para pentesters · Academia eJPTv2</title>
+<meta name="description" content="CMD, PowerShell, usuarios, servicios, registro, SMB, RDP y conceptos de Active Directory.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar"></aside>
+<main>
+<span class="badge base">Nivel 0</span>
+<h1>03 · Windows para pentesters</h1>
+<p class="lead">La mayoría de empresas usan Windows y Active Directory. Aquí ves lo esencial para no perderte cuando comprometas un equipo Windows.</p>
+
+<h2>1. CMD vs PowerShell</h2>
+<div class="table-wrap"><table>
+<tr><th>Tarea</th><th>CMD</th><th>PowerShell</th><th>Linux equivalente</th></tr>
+<tr><td>Listar</td><td><code>dir</code></td><td><code>ls</code> / <code>Get-ChildItem</code></td><td><code>ls</code></td></tr>
+<tr><td>Dónde estoy</td><td><code>cd</code></td><td><code>pwd</code></td><td><code>pwd</code></td></tr>
+<tr><td>Ver fichero</td><td><code>type f.txt</code></td><td><code>Get-Content f.txt</code></td><td><code>cat</code></td></tr>
+<tr><td>Buscar texto</td><td><code>findstr pass *</code></td><td><code>Select-String pass</code></td><td><code>grep</code></td></tr>
+<tr><td>Quién soy</td><td><code>whoami</code></td><td><code>whoami /priv</code></td><td><code>id</code></td></tr>
+<tr><td>IP</td><td><code>ipconfig /all</code></td><td><code>Get-NetIPAddress</code></td><td><code>ip a</code></td></tr>
+<tr><td>Procesos</td><td><code>tasklist</code></td><td><code>Get-Process</code></td><td><code>ps aux</code></td></tr>
+<tr><td>Descargar</td><td>—</td><td><code>iwr http://ip/f -o f</code> · <code>certutil -urlcache -f http://ip/f f</code></td><td><code>wget</code></td></tr>
+</table></div>
+
+<h2>2. Usuarios, grupos y privilegios</h2>
+<pre><span class="p">&gt;</span> whoami /priv            <span class="c"># privilegios (SeImpersonate = ¡escalada!)</span>
+<span class="p">&gt;</span> whoami /groups
+<span class="p">&gt;</span> net user                <span class="c"># usuarios locales</span>
+<span class="p">&gt;</span> net user administrador   <span class="c"># info de un usuario</span>
+<span class="p">&gt;</span> net localgroup administrators   <span class="c"># quién es admin local</span>
+<span class="p">&gt;</span> net user hacker Passw0rd! /add   <span class="c"># crear usuario (con permisos)</span>
+<span class="p">&gt;</span> net localgroup administrators hacker /add</pre>
+<div class="box def"><strong>📘 Cuentas especiales</strong><b>Administrator</b> = admin local. <b>NT AUTHORITY\SYSTEM</b> = la cuenta más poderosa de la máquina (equivale a root). <b>Domain Admins</b> = dios de todo el dominio Active Directory.</div>
+
+<h2>3. Servicios y registro</h2>
+<pre><span class="p">&gt;</span> sc query               <span class="c"># servicios</span>
+<span class="p">&gt;</span> sc qc nombre_servicio  <span class="c"># config (ruta del binario)</span>
+<span class="p">&gt;</span> wmic service list brief
+<span class="p">&gt;</span> reg query HKLM\Software  <span class="c"># registro = base de datos de config de Windows</span></pre>
+<div class="box warn"><strong>⚠️ Dónde se esconden credenciales en Windows</strong>Ficheros <code>Unattend.xml</code>, <code>sysprep.xml</code>, <code>web.config</code>, el registro (<code>reg query HKLM /f password /t REG_SZ /s</code>), y la memoria del proceso LSASS (Mimikatz).</div>
+
+<h2>4. SMB y recursos compartidos</h2>
+<div class="box def"><strong>📘 SMB</strong>Protocolo de Windows para compartir carpetas e impresoras (puerto 445). Un “share” es una carpeta compartida. A veces hay shares accesibles sin contraseña (null session).</div>
+<pre><span class="c"># Desde Kali</span>
+<span class="p">$</span> smbclient -L //10.0.2.5/ -N            <span class="c"># listar shares sin credenciales</span>
+<span class="p">$</span> smbclient //10.0.2.5/Compartido -N     <span class="c"># conectar</span>
+<span class="p">$</span> crackmapexec smb 10.0.2.5 -u '' -p ''  <span class="c"># comprobar null session</span></pre>
+
+<h2>5. RDP y WinRM: acceso remoto</h2>
+<pre><span class="p">$</span> xfreerdp /u:admin /p:Passw0rd! /v:10.0.2.5     <span class="c"># escritorio remoto (3389)</span>
+<span class="p">$</span> evil-winrm -i 10.0.2.5 -u admin -p 'Passw0rd!'  <span class="c"># PowerShell remoto (5985)</span></pre>
+
+<h2>6. Active Directory en una imagen (lo verás en el módulo 14)</h2>
+<figure>
+<svg viewBox="0 0 760 240" role="img" aria-label="Dominio con DC y equipos">
+<rect x="280" y="10" width="200" height="70" rx="12" fill="#2563eb22" stroke="#2563eb"/><text x="380" y="40" text-anchor="middle" font-weight="800">🏛️ Controlador de Dominio</text><text x="380" y="62" text-anchor="middle" font-size="12" class="muted">guarda TODOS los usuarios (NTDS.dit)</text>
+<g class="bx"><rect x="40" y="150" width="180" height="60" rx="10"/><rect x="290" y="150" width="180" height="60" rx="10"/><rect x="540" y="150" width="180" height="60" rx="10"/></g>
+<text x="130" y="185" text-anchor="middle">💻 PC Contabilidad</text><text x="380" y="185" text-anchor="middle">💻 PC RRHH</text><text x="630" y="185" text-anchor="middle">🖥️ Servidor Ficheros</text>
+<g stroke="#888" stroke-width="2"><line x1="380" y1="80" x2="130" y2="150"/><line x1="380" y1="80" x2="380" y2="150"/><line x1="380" y1="80" x2="630" y2="150"/></g>
+<text x="380" y="235" text-anchor="middle" font-size="13" class="muted">Dominio: CORP.LOCAL — todos confían en el DC para autenticarse (Kerberos)</text>
+</svg></figure>
+<div class="box analogy"><strong>🧠 Analogía</strong>Active Directory es el <b>portero y llavero central</b> de una empresa. En vez de tener una llave por puerta, el portero (Controlador de Dominio) decide quién entra a dónde. Si comprometes al portero, abres todo el edificio.</div>
+
+<h2>🎥 Vídeos</h2>
+<div class="vlinks">
+<a href="https://www.youtube.com/results?search_query=powershell+para+pentesting+basico" target="_blank" rel="noopener">PowerShell básico</a>
+<a href="https://www.youtube.com/results?search_query=active+directory+explicado+facil" target="_blank" rel="noopener">Active Directory explicado</a>
+</div>
+
+<h2>📝 Evaluación del tema</h2>
+<script type="application/json" data-quiz="Cuestionario 03 · Windows">
+[
+{"q":"¿Cuál es la cuenta más privilegiada de un Windows (equivalente a root)?","o":["Administrator","NT AUTHORITY\\SYSTEM","Guest","User"],"a":1,"e":"SYSTEM tiene control total de la máquina."},
+{"q":"¿Qué comando muestra tus privilegios en Windows?","o":["net user","whoami /priv","id","sc query"],"a":1,"e":"whoami /priv; busca SeImpersonatePrivilege para escalar."},
+{"q":"¿Qué puerto usa RDP?","o":["445","3389","5985","22"],"a":1,"e":"RDP = 3389. WinRM = 5985."},
+{"q":"¿Con qué herramienta te conectas por WinRM teniendo credenciales?","o":["xfreerdp","evil-winrm","smbclient","ssh"],"a":1,"e":"evil-winrm da una shell de PowerShell remota."},
+{"q":"Una 'null session' en SMB significa…","o":["La conexión falló","Acceso sin usuario ni contraseña","Sesión cifrada","Puerto cerrado"],"a":1,"e":"Acceso anónimo (-u '' -p '')."},
+{"q":"¿Dónde guarda el Controlador de Dominio todas las credenciales del dominio?","o":["SAM","NTDS.dit","shadow","web.config"],"a":1,"e":"NTDS.dit es la base de datos de Active Directory."}
+]
+</script>
+<div class="lab"><h4>🧪 Práctica</h4><p>En tu VM de Windows abre PowerShell y ejecuta <code>whoami /priv</code>, <code>net user</code>, <code>systeminfo</code>, <code>ipconfig /all</code>. Desde Kali prueba <code>smbclient -L //IP/ -N</code>. Anota qué información te da cada uno.</p></div>
+
+</main>
+<nav class="toc"></nav>
+</div>
+<script src="../assets/app.js"></script>
+</body>
+</html>
